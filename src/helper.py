@@ -16,12 +16,12 @@ stationLatLng = {
 
 
 def get_lat_lng(address):
-    #try:
-    loc = geolocator.geocode(query=address, language='da', country_codes='Denmark')
-    return loc.raw['lat'] + ',' + loc.raw['lon']
+    try:
+        loc = geolocator.geocode(query=address, language='da', country_codes='Denmark')
+        return loc.raw['lat'] + ',' + loc.raw['lon']
 
-    #except:
-    #    return ''
+    except AttributeError:
+        return ''
 
 
 def get_dist_to_station(zipcode, latlng):

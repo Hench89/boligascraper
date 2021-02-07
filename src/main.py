@@ -5,7 +5,7 @@ import config as cnf
 
 # read from archive
 try:
-    df_old = pd.read_csv('data/boliga.csv', sep=';')
+    df_old = pd.read_csv('../data/boliga.csv', sep=';')
     print('(1) read from archive:', len(df_old), 'listings')
 except FileNotFoundError:
     df_old = pd.DataFrame(columns=cnf.clean_cols)
@@ -45,5 +45,5 @@ df['market_days'] = df.apply(lambda x: hlp.days_on_market(x.created_date), axis=
 df = df.sort_values(by=['market_days', 'list_price']).reset_index(drop=True)
 df = df[cnf.print_cols]
 
-df.to_csv('data/boliga.csv', index=False, sep=';')
-hlp.write_to_excel(df, 'data/boliga.xlsx')
+df.to_csv('../data/boliga.csv', index=False, sep=';')
+hlp.write_to_excel(df, '../data/boliga.xlsx')
