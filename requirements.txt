@@ -1,5 +1,4 @@
-setuptools~=49.2.1
-pandas~=1.1.3
-geopy~=2.1.0
-MechanicalSoup~=0.12.0
-numpy~=1.18.5
+geopy==2.1.0
+pandas==1.1.3
+numpy==1.18.5
+MechanicalSoup==0.12.0

@@ -2,6 +2,7 @@ import pandas as pd
 from geopy.distance import geodesic
 from geopy.geocoders import Nominatim
 from datetime import datetime, date
+import urllib.request, json
 import locale
 
 locale.setlocale(locale.LC_TIME, "da_DK")
@@ -25,13 +26,18 @@ def get_lat_lng(address):
 
 
 def get_dist_to_station(zipcode, latlng):
+    try:
+        
+        if zipcode == '' or latlng == '':
+            return
 
-    if zipcode == '' or latlng == '':
+        point_a = stationLatLng[str(zipcode)]
+        point_b = latlng
+        dist = geodesic(point_a, point_b).km
+    
+    except KeyError:
         return
 
-    point_a = stationLatLng[str(zipcode)]
-    point_b = latlng
-    dist = geodesic(point_a, point_b).km
     return round(dist, 2)
 
 

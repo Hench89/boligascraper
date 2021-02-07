@@ -2,6 +2,7 @@ import pandas as pd
 import boliga_reader as br
 import helper as hlp
 import config as cnf
+import os
 
 # read from archive
 try:
@@ -45,5 +46,12 @@ df['market_days'] = df.apply(lambda x: hlp.days_on_market(x.created_date), axis=
 df = df.sort_values(by=['market_days', 'list_price']).reset_index(drop=True)
 df = df[cnf.print_cols]
 
-df.to_csv('../data/boliga.csv', index=False, sep=';')
-hlp.write_to_excel(df, '../data/boliga.xlsx')
+# save csv
+csv_path = '../data/boliga.csv'
+os.remove(csv_path)
+df.to_csv(csv_path, index=False, sep=';')
+
+# save excel
+excel_path = '../data/boliga.xlsx'
+os.remove(excel_path)
+hlp.write_to_excel(df, excel_path)

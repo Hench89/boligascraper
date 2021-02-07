@@ -13,9 +13,10 @@ def get_boliga_listings():
     boliga_listings = []
     browser = ms.StatefulBrowser()
 
-    for c in cnf.cities:
-        zipcode = c['zipcode']
-        city_listings = _get_city_listings(browser, zipcode)
+    # get post numbers
+    for zipcode in cnf.zipcodes:
+
+        city_listings = _get_city_listings(browser, str(zipcode))
         for item in city_listings:
             boliga_listings.append(item)
 
@@ -57,11 +58,15 @@ def _get_pages_to_process(browser, zipcode):
     html = browser.get_current_page()
 
     # get page stats
-    pg_stats = html.find_all('div', attrs={'class': re.compile('paging-stats')})
-    pg_stats = pg_stats[-1].get_text()
-    listings_count = re.search(r'(\d+)(?!.*\d)', pg_stats).group(0)
-    pages = int(np.ceil(int(listings_count) / 50))
-    print('..getting pages from', zipcode, '-- found', pages, 'page(s)')
+    try:
+        pg_stats = html.find_all('div', attrs={'class': re.compile('paging-stats')})
+        pg_stats = pg_stats[-1].get_text()
+        listings_count = re.search(r'(\d+)(?!.*\d)', pg_stats).group(0)
+        listings_num = int(listings_count)
+        pages = int(np.ceil(int(listings_count) / 50))
+        print('..getting pages from', zipcode, '-- found', listings_num, 'listings, on', pages, 'page(s)')
+    except IndexError:
+        return 0
 
     return pages
 
@@ -72,12 +77,12 @@ def get_boliga_data(boliga_listings):
     browser = ms.StatefulBrowser()
     processed_listings = []
 
-    for item in boliga_listings:
+    for index, item in enumerate(boliga_listings):
 
         # unpack
         boliga_id = item[0]
         zipcode = item[1]
-        print('processing', boliga_id, 'in', zipcode)
+        print('processing', boliga_id, 'in', zipcode, '-', index, 'of', len(processed_listings))
 
         # pull data
         url = "https://www.boliga.dk/bolig/" + boliga_id
