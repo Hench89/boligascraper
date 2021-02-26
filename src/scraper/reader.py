@@ -2,26 +2,26 @@ import mechanicalsoup as ms
 import pandas as pd
 import numpy as np
 import re
-import boliga_cleaner as bc
-import helper as hlp
-import config as cnf
+from scraper import cleaner as cln
+from helper import helper as hlp
 
 
 def get_boliga_listings():
 
-    # get listings per city
-    boliga_listings = []
+    # setup
+    df_zip = pd.read_csv('./static/zipcode.csv', sep=',')
+    listings = []
     browser = ms.StatefulBrowser()
 
     # get post numbers
-    for zipcode in cnf.zipcodes:
+    for zipcode in df_zip['zipcode']:
 
         city_listings = _get_city_listings(browser, str(zipcode))
         for item in city_listings:
-            boliga_listings.append(item)
+            listings.append(item)
 
     # return as dataframe
-    df = pd.DataFrame(boliga_listings)
+    df = pd.DataFrame(listings)
     df = df.drop_duplicates(subset='boliga_id', keep="last")
     df = df.reset_index(drop=True)
 
@@ -82,7 +82,7 @@ def get_boliga_data(boliga_listings):
         # unpack
         boliga_id = item[0]
         zipcode = item[1]
-        print('processing', boliga_id, 'in', zipcode, '-', index, 'of', len(processed_listings))
+        print('processing', boliga_id, 'in', zipcode, '-', index+1, 'of', len(boliga_listings))
 
         # pull data
         url = "https://www.boliga.dk/bolig/" + boliga_id
@@ -96,18 +96,18 @@ def get_boliga_data(boliga_listings):
         df_raw = pd.DataFrame(d, index=[0])
 
         # cleaning and extending dataframe
-        df_clean = bc.clean_boliga_data(df_raw)
+        df_clean = cln.clean_boliga_data(df_raw)
 
         # geo related data
         df_clean['latlng'] = df_clean['address1'].apply(lambda x: hlp.get_lat_lng(x))
         df_clean['gmaps'] = df_clean['latlng'].apply(lambda x: 'https://maps.google.com/?q=' + str(x))
         df_clean['station_dist_km'] = df_clean.apply(lambda x:
                                                      hlp.get_dist_to_station(x.zipcode, x.latlng), axis=1)
-        processed_listings.append(df_clean[cnf.clean_cols])
+        processed_listings.append(df_clean[cln.clean_cols])
 
     if len(processed_listings) > 0:
         return pd.concat(processed_listings)
-    return pd.DataFrame(columns=cnf.clean_cols)
+    return pd.DataFrame(columns=cln.clean_cols)
 
 
 def _get_boliga_soup(browser, url):

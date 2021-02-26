@@ -1,6 +1,14 @@
 import re
 from datetime import datetime
 
+clean_cols = ['boliga_id', 'address1', 'address2', 'zipcode', 'list_price', 'living_area',
+              'lot_area', 'rooms', 'floors', 'construction_date', 'energy_rating',
+              'taxes_pr_month', 'bsmnt_area', 'station_dist_km', 'created_date', 'url', 'gmaps']
+
+print_cols = ['boliga_id', 'address1', 'address2', 'zipcode', 'list_price',
+              'living_area', 'lot_area', 'rooms', 'floors', 'construction_date', 'energy_rating',
+              'taxes_pr_month', 'bsmnt_area', 'station_dist_km', 'created_date', 'market_days', 'url',
+              'gmaps']
 
 def clean_boliga_data(df):
 

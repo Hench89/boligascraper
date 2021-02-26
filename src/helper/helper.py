@@ -5,7 +5,13 @@ from datetime import datetime, date
 import urllib.request, json
 import locale
 
-locale.setlocale(locale.LC_TIME, "da_DK")
+try:
+    import locale
+    locale.setlocale(locale.LC_ALL, 'da_DK.utf8')
+except Exception:
+    locale.setlocale(locale.LC_ALL, 'da_DK.UTF-8')
+
+#locale.setlocale(locale.LC_TIME, "da_DK")
 geolocator = Nominatim(user_agent="myapp")
 stationLatLng = {
     '3450': '55.8722219179645,12.357256289318334',

@@ -1,15 +1,14 @@
 import pandas as pd
-import boliga_reader as br
-import helper as hlp
-import config as cnf
+from scraper import reader as br, cleaner as cln
+from helper import helper as hlp
 import os
 
 # read from archive
 try:
-    df_old = pd.read_csv('../data/boliga.csv', sep=';')
+    df_old = pd.read_csv('./output/boliga.csv', sep=';')
     print('(1) read from archive:', len(df_old), 'listings')
 except FileNotFoundError:
-    df_old = pd.DataFrame(columns=cnf.clean_cols)
+    df_old = pd.DataFrame(columns=cln.clean_cols)
     print('(1) starting a new archive')
 
 # read from boliga
@@ -44,14 +43,14 @@ except ValueError:
 print('(5) saving to archive ..')
 df['market_days'] = df.apply(lambda x: hlp.days_on_market(x.created_date), axis=1)
 df = df.sort_values(by=['market_days', 'list_price']).reset_index(drop=True)
-df = df[cnf.print_cols]
+df = df[cln.print_cols]
 
 # save csv
-csv_path = '../data/boliga.csv'
+csv_path = './output/boliga.csv'
 os.remove(csv_path)
 df.to_csv(csv_path, index=False, sep=';')
 
 # save excel
-excel_path = '../data/boliga.xlsx'
+excel_path = './output/boliga.xlsx'
 os.remove(excel_path)
 hlp.write_to_excel(df, excel_path)
