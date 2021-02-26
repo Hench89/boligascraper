@@ -1,56 +1,87 @@
 import pandas as pd
+import numpy as np
 from scraper import reader as br, cleaner as cln
 from helper import helper as hlp
 import os
 
+def read_data():
+
+    # read from archive
+    try:
+        df_archive = pd.read_csv('./output/boliga.csv', sep=';')
+        print('.. read %s listings from archive:' % len(df_archive))
+    except FileNotFoundError:
+        df_archive = pd.DataFrame(columns=cln.clean_cols)
+        print('.. starting a new archive')
+
+    # read from boliga
+    print('.. fetching all listings from boliga')
+    df_listings = br.get_boliga_listings()
+
+    return df_archive, df_listings
+
+def diff_data(df_archive, df_listings):
+
+    # conversion
+    df_listings['boliga_id'] = np.int64(df_listings['boliga_id'])
+    df_archive['boliga_id'] = np.int64(df_archive['boliga_id'])
+
+    # ids to remove and insert
+    seta = set(df_listings['boliga_id'])
+    setb = set(df_archive['boliga_id'])
+    set_rem = setb.difference(seta)
+    set_add = seta.difference(setb)
+
+    print('.. new items to process: %s' % (len(set_add)))
+    print('.. items to remove from archive: %s' % len(set_rem))
+
+    # remove from old, a
+    df_archive = df_archive[~df_archive['boliga_id'].isin(set_rem)].reset_index(drop=True)
+    df_add = df_listings[df_listings['boliga_id'].isin(set_add)].reset_index(drop=True)
+
+    return df_archive, df_add
+
+def process_listings(df_archive, df_add):
+
+    # process items
+    if len(df_add) > 0:
+        items_to_process = df_add[['boliga_id', 'zipcode']].to_numpy()
+        df_add = br.get_boliga_data(items_to_process)
+
+    # merged df
+    try:
+        df = pd.concat([df_archive, df_add]).reset_index(drop=True)
+    except ValueError:
+        df = df_archive
+
+    # remove duplicates
+    df = df.groupby(['boliga_id']).head(1)
+
+    # date related data
+    df['market_days'] = df.apply(lambda x: hlp.days_on_market(x.created_date), axis=1)
+    df = df.sort_values(by=['market_days', 'list_price']).reset_index(drop=True)
+    df = df[cln.print_cols]
+
+    return df
+
+def save_data(df, csv_path, xlsx_path):
+    df.to_csv(csv_path, index=False, sep=';')
+    hlp.write_to_excel(df, xlsx_path)
+
 # read from archive
-try:
-    df_old = pd.read_csv('./output/boliga.csv', sep=';')
-    print('(1) read from archive:', len(df_old), 'listings')
-except FileNotFoundError:
-    df_old = pd.DataFrame(columns=cln.clean_cols)
-    print('(1) starting a new archive')
+print("step %s: reading archive and new listings" % 1)
+df_archive, df_listings = read_data()
 
-# read from boliga
-print('(2) reading from boliga')
-df_new = br.get_boliga_listings()
+# identify differences
+print("step %s: identifying differences" % 2)
+df_archive, df_add = diff_data(df_archive, df_listings)
 
-# ids to remove and insert
-print('(3) identifying what to remove and insert')
-list_old = df_old['boliga_id'].astype(str).to_numpy()
-list_new = df_new['boliga_id'].astype(str).to_numpy()
-list_add = [x for x in list_new if x not in list_old]
-list_rem = [x for x in list_old if x not in list_new]
-print('..to insert:', len(list_add))
-print('..to delete:', len(list_rem))
-
-df_old = df_old[~df_old['boliga_id'].astype(str).isin(list_rem)].reset_index(drop=True)
-df_add = df_new[df_new['boliga_id'].astype(str).isin(list_add)].reset_index(drop=True)
-
-# process items
-if len(df_add) > 0:
-    print('(4) retrieving new items ..')
-    items_to_process = df_add[['boliga_id', 'zipcode']].to_numpy()
-    df_new = br.get_boliga_data(items_to_process)
-
-# merge data
-try:
-    df = pd.concat([df_old, df_new]).reset_index(drop=True)
-except ValueError:
-    df = df_old
-
-# date related data
-print('(5) saving to archive ..')
-df['market_days'] = df.apply(lambda x: hlp.days_on_market(x.created_date), axis=1)
-df = df.sort_values(by=['market_days', 'list_price']).reset_index(drop=True)
-df = df[cln.print_cols]
+# process new things
+print("step %s: updating archive" % 3)
+df = process_listings(df_archive, df_add)
 
 # save csv
+print("step %s: storing archive" % 4)
 csv_path = './output/boliga.csv'
-os.remove(csv_path)
-df.to_csv(csv_path, index=False, sep=';')
-
-# save excel
-excel_path = './output/boliga.xlsx'
-os.remove(excel_path)
-hlp.write_to_excel(df, excel_path)
+xlsx_path = './output/boliga.xlsx'
+save_data(df, csv_path, xlsx_path)

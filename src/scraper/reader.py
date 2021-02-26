@@ -14,11 +14,14 @@ def get_boliga_listings():
     browser = ms.StatefulBrowser()
 
     # get post numbers
-    for zipcode in df_zip['zipcode']:
+    for index, zipcode in enumerate(df_zip['zipcode']):
 
         city_listings = _get_city_listings(browser, str(zipcode))
         for item in city_listings:
             listings.append(item)
+
+        print(".. finding listings in %s (%s of %s)" % (zipcode, index+1, len(df_zip)))
+
 
     # return as dataframe
     df = pd.DataFrame(listings)
@@ -64,7 +67,6 @@ def _get_pages_to_process(browser, zipcode):
         listings_count = re.search(r'(\d+)(?!.*\d)', pg_stats).group(0)
         listings_num = int(listings_count)
         pages = int(np.ceil(int(listings_count) / 50))
-        print('..getting pages from', zipcode, '-- found', listings_num, 'listings, on', pages, 'page(s)')
     except IndexError:
         return 0
 
@@ -82,10 +84,10 @@ def get_boliga_data(boliga_listings):
         # unpack
         boliga_id = item[0]
         zipcode = item[1]
-        print('processing', boliga_id, 'in', zipcode, '-', index+1, 'of', len(boliga_listings))
+        print(".. processing id %s in %s (%s of %s)" % (boliga_id, zipcode, index+1, len(boliga_listings)))
 
         # pull data
-        url = "https://www.boliga.dk/bolig/" + boliga_id
+        url = "https://www.boliga.dk/bolig/" + str(boliga_id)
         soup_row, soup_icons = _get_boliga_soup(browser, url)
 
         # process to raw dataframe
