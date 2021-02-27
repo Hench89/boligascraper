@@ -55,30 +55,3 @@ def days_on_market(date_string):
         return (today_date - created_date).days
     except ValueError:
         return ''
-
-
-def write_to_excel(df, path):
-
-    # setup writer
-    writer = pd.ExcelWriter(path, engine='xlsxwriter')
-    df.to_excel(writer, sheet_name='Sheet1', index=False)
-
-    # Get the xlsxwriter workbook and worksheet objects.
-    worksheet = writer.sheets['Sheet1']
-
-    # Format: cell width
-    for c in df.columns:
-        i = df.columns.get_loc(c)
-        values_len = df[c].astype(str).str.len().max()
-        header_len = len(c)
-        worksheet.set_column(i, i + 1, max(values_len, header_len))
-
-    # Format: auto filter
-    max_row = df.shape[0]
-    max_col = df.shape[1]
-    worksheet.autofilter(0, 0, max_row, max_col - 1)
-
-    # set CreatedDate as hidden
-    worksheet.set_column('O:O', None, None, {'hidden': True})
-
-    writer.save()

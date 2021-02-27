@@ -64,9 +64,8 @@ def process_listings(df_archive, df_add):
 
     return df
 
-def save_data(df, csv_path, xlsx_path):
+def save_data(df, csv_path):
     df.to_csv(csv_path, index=False, sep=';')
-    hlp.write_to_excel(df, xlsx_path)
 
 # read from archive
 print("step %s: reading archive and new listings" % 1)
@@ -83,5 +82,4 @@ df = process_listings(df_archive, df_add)
 # save csv
 print("step %s: storing archive" % 4)
 csv_path = './output/boliga.csv'
-xlsx_path = './output/boliga.xlsx'
-save_data(df, csv_path, xlsx_path)
+save_data(df, csv_path)
