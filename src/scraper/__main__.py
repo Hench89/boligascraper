@@ -65,7 +65,13 @@ def process_listings(df_archive, df_add):
     return df
 
 def save_data(df, csv_path):
-    df.to_csv(csv_path, index=False, sep=';')
+    
+    if not os.path.exists(os.path.dirname(csv_path)):
+        try:
+            os.makedirs(os.path.dirname(csv_path))
+            df.to_csv(csv_path, index=False, sep=';')
+        except OSError:
+            raise
 
 # read from archive
 print("step %s: reading archive and new listings" % 1)

@@ -4,4 +4,14 @@ This is a small tool to run through boliga.
 The tool will apply webscraping of Boliga.dk to fetch all listings in Region Hovedstaden,
 The result will be parsed into excel file
 
-requires language-pack-da to run
+## running on Debian
+
+to run on debian like systems, you need following packages
+
+* language-pack-da (sudo dpkg-reconfigure locales)
+* libxml2-dev + libxslt-dev (required for lxml)
+* libatlas-base-dev - [why?](https://github.com/numpy/numpy/issues/14772)
+
+## running on docker
+
+The project includes dockerfile to run in container.

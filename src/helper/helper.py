@@ -1,8 +1,6 @@
-import pandas as pd
 from geopy.distance import geodesic
 from geopy.geocoders import Nominatim
 from datetime import datetime, date
-import urllib.request, json
 import locale
 
 try:
