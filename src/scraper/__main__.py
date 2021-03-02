@@ -1,14 +1,16 @@
 import pandas as pd
 import numpy as np
-from scraper import reader as br, cleaner as cln
-from helper import helper as hlp
+import csv
 import os
+from scraper import reader as br
+from scraper import cleaner as cln
+from scraper import helper as hlp
 
 def read_data():
 
     # read from archive
     try:
-        df_archive = pd.read_csv('./output/boliga.csv', sep=';')
+        df_archive = pd.read_csv('./output/boliga.csv', quoting=csv.QUOTE_NONNUMERIC)
         print('.. read %s listings from archive:' % len(df_archive))
     except FileNotFoundError:
         df_archive = pd.DataFrame(columns=cln.clean_cols)
@@ -65,13 +67,13 @@ def process_listings(df_archive, df_add):
     return df
 
 def save_data(df, csv_path):
-    
     if not os.path.exists(os.path.dirname(csv_path)):
         try:
             os.makedirs(os.path.dirname(csv_path))
-            df.to_csv(csv_path, index=False, sep=';')
         except OSError:
             raise
+    df.to_csv(csv_path, index=False, quoting=csv.QUOTE_NONNUMERIC)
+
 
 # read from archive
 print("step %s: reading archive and new listings" % 1)

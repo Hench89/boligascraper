@@ -3,8 +3,7 @@ import pandas as pd
 import numpy as np
 import re
 from scraper import cleaner as cln
-from helper import helper as hlp
-
+from scraper import helper as hlp
 
 def get_boliga_listings():
 
@@ -31,7 +30,6 @@ def get_boliga_listings():
     return df
 
 
-# get all listings for a zipcode
 def _get_city_listings(browser, zipcode):
     pages_to_process = _get_pages_to_process(browser, zipcode)
     url_list = []
@@ -53,7 +51,6 @@ def _get_city_listings(browser, zipcode):
     return url_list
 
 
-# get pages needed to be scraped for a for zipcode
 def _get_pages_to_process(browser, zipcode):
 
     # open page
@@ -73,7 +70,6 @@ def _get_pages_to_process(browser, zipcode):
     return pages
 
 
-# get data from a specific listing
 def get_boliga_data(boliga_listings):
 
     browser = ms.StatefulBrowser()
@@ -136,7 +132,6 @@ def _process_section_a(soup):
     return d
 
 
-# processing of bs4 object, related to icons on page
 def _process_section_b(soup):
 
     d = {}

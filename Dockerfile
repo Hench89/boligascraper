@@ -1,4 +1,6 @@
-FROM arm64v8/python:3.8-slim
+FROM arm32v7/python:3.8-slim
+
+#RUN apt update && apt upgrade -y && apt-get install -y build-essential libssl-dev libffi-dev python-dev
 
 # install poetry package manager
 RUN pip install poetry==1.1.3

@@ -3,8 +3,11 @@ IMAGE_TAG = latest
 PI_IP = 192.168.1.35
 PI_FOLDER = scraper
 
-local-run:
+run:
 	poetry run python ./src/scraper
+
+reporting:
+	poetry run python ./src/reporting
 
 docker-build:
 	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
