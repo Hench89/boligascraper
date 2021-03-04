@@ -40,9 +40,12 @@ def get_email_body(file_path: str, get_days: int):
     df['living_area'] = np.round(np.int64(df['living_area']),0)
     df['rooms'] = np.round(np.int64(df['rooms']),0)
     df['market_days'] = np.round(np.int64(df['market_days']),0)
+    df['url'] = "LINKSTART" + df['url'] + "LINKEND"
 
     # put together
     output_columns = ['index', 'address1', 'address2', 'list_price', 'living_area', 'rooms', 'url', 'market_days']
     html_table_blue_light = build_table(df[output_columns], 'red_dark')
+    html_table_blue_light = html_table_blue_light.replace("LINKSTART", "<a href=\"")
+    html_table_blue_light = html_table_blue_light.replace("LINKEND", "\">LINK</a>")
 
     return html_table_blue_light
