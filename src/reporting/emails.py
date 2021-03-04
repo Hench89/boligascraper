@@ -3,13 +3,18 @@ import numpy as np
 import csv
 import smtplib
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from pretty_html_table import build_table
 
 def send_ssl_mail(send_from, password, subject, body, server, port, send_to):
 
-    msg = MIMEText(body)
+    msg = MIMEMultipart('related')
     msg['Subject'] = subject
     msg['From'] = send_from
     msg['To'] = ", ".join(send_to)
+
+    part2 = MIMEText(body, 'html')
+    msg.attach(part2)
 
     try:
         server = smtplib.SMTP_SSL('smtp.gmail.com', port)
@@ -30,19 +35,14 @@ def get_email_body(file_path: str, get_days: int):
     df = df[df['market_days'] <= get_days].reset_index()
 
     # finetune column types
-    df['zipcode'] = np.round(np.int64(df['zipcode']),0)
+    df['index'] = df.index +1
     df['list_price'] = np.round(np.int64(df['list_price']),0)
+    df['living_area'] = np.round(np.int64(df['living_area']),0)
+    df['rooms'] = np.round(np.int64(df['rooms']),0)
     df['market_days'] = np.round(np.int64(df['market_days']),0)
 
-    # prepare some text
-    txt = []
-    for index in range(len(df)):
-        zipcode = str(df.loc[index]['zipcode'])
-        url = str(df.loc[index]['url'])
-        price = str(df.loc[index]['list_price'])
-        days = str(df.loc[index]['market_days'])
-        txt.append(f'{str(index+1)}: ny bolig i {zipcode} på markedet i {days} dage til {price} kr. - se mere: {url}')
+    # put together
+    output_columns = ['index', 'address1', 'address2', 'list_price', 'living_area', 'rooms', 'url', 'market_days']
+    html_table_blue_light = build_table(df[output_columns], 'red_dark')
 
-    s = "\r\n"
-    s = s.join(txt)
-    return s
+    return html_table_blue_light

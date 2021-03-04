@@ -116,6 +116,17 @@ pytz = ">=2017.3"
 test = ["pytest (>=5.0.1)", "pytest-xdist", "hypothesis (>=3.58)"]
 
 [[package]]
+name = "pretty-html-table"
+version = "0.9.dev0"
+description = "Make pandas dataframe looking pretty again"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+pandas = "*"
+
+[[package]]
 name = "python-dateutil"
 version = "2.8.1"
 description = "Extensions to the standard Python datetime module"
@@ -184,7 +195,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7.1"
-content-hash = "5ccf8a9c22b0cb3e567b018907f3e0609ecd8cdf30ec4e7ce43ba4f2451731bd"
+content-hash = "72afdce5fd6a0303e305610508e1ba3434bc1ca159ad17ed0606c8855d2c6780"
 
 [metadata.files]
 beautifulsoup4 = [
@@ -298,6 +309,9 @@ pandas = [
     {file = "pandas-1.2.3-cp39-cp39-win32.whl", hash = "sha256:d59842a5aa89ca03c2099312163ffdd06f56486050e641a45d926a072f04d994"},
     {file = "pandas-1.2.3-cp39-cp39-win_amd64.whl", hash = "sha256:09761bf5f8c741d47d4b8b9073288de1be39bbfccc281d70b889ade12b2aad29"},
     {file = "pandas-1.2.3.tar.gz", hash = "sha256:df6f10b85aef7a5bb25259ad651ad1cc1d6bb09000595cab47e718cbac250b1d"},
+]
+pretty-html-table = [
+    {file = "pretty_html_table-0.9.dev0.tar.gz", hash = "sha256:63b3ce16ab1abdbc4888094ba792908666122eafe3fd98ed127efbb4dd3ac0f9"},
 ]
 python-dateutil = [
     {file = "python-dateutil-2.8.1.tar.gz", hash = "sha256:73ebfe9dbf22e832286dafa60473e4cd239f8592f699aa5adaf10050e6e1823c"},

@@ -10,7 +10,7 @@ to run on debian like systems, you need following packages
 
 * language-pack-da (sudo dpkg-reconfigure locales)
 * libxml2-dev + libxslt-dev (required for lxml)
-* libatlas-base-dev - [why?](https://github.com/numpy/numpy/issues/14772)
+
 
 ## running on docker
 
