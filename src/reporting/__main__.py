@@ -1,14 +1,15 @@
-from reporting.emails import send_mail, get_latest
+from reporting.emails import send_ssl_mail, get_email_body
 import os
 
-
-send_from = os.getenv('MY_MAILTO')
-send_to = [os.getenv('MY_MAILFROM')]
+send_from = os.getenv('MY_MAILFROM')
+send_to = os.getenv('MY_MAILTO').split(";")
 password = os.getenv('MY_MAILPASS')
-message = get_latest("./output/boliga.csv", 1)
 server = "smtp.gmail.com"
+port = 465
+
 subject = "Boliga Listings"
-files = ["./output/boliga.csv"]
+archive_file_path = "./output/boliga.csv"
+body = get_email_body(archive_file_path, 1)
 
 #print(message)
-send_mail(send_from, send_to, subject, message, files, server, port=587, username=send_from, password=password,use_tls=True)
+send_ssl_mail(send_from, password, subject, body, server, port, send_to)

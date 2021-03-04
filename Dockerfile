@@ -1,20 +1,13 @@
-FROM arm32v7/python:3.8-slim
+FROM arm32v7/python:3.8-slim-buster
 
-#RUN apt update && apt upgrade -y && apt-get install -y build-essential libssl-dev libffi-dev python-dev
-
-# install poetry package manager
-RUN pip install poetry==1.1.3
-RUN poetry config virtualenvs.create false
-
-# using poetry, install project dependencies
+# install project dependencies
 RUN mkdir -p /app/src
 WORKDIR /app
-COPY poetry.lock pyproject.toml /app/
-RUN poetry install --no-root
+
+# install wheel
 
 # using poetry, install project
 COPY src /app/src
-RUN poetry install
 COPY static /app/static
 
 # setup the locale setting

@@ -1,42 +1,28 @@
-import smtplib
-from pathlib import Path
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email.mime.text import MIMEText
-from email.utils import COMMASPACE, formatdate
-from email import encoders
 import pandas as pd
 import numpy as np
 import csv
+import smtplib
+from email.mime.text import MIMEText
 
-def send_mail(send_from, send_to, subject, message, files=[],
-    server="localhost", port=587, username='', password='',
-    use_tls=True):
+def send_ssl_mail(send_from, password, subject, body, server, port, send_to):
 
-    msg = MIMEMultipart()
-    msg['From'] = send_from
-    msg['To'] = COMMASPACE.join(send_to)
-    msg['Date'] = formatdate(localtime=True)
+    msg = MIMEText(body)
     msg['Subject'] = subject
+    msg['From'] = send_from
+    msg['To'] = ", ".join(send_to)
 
-    msg.attach(MIMEText(message))
+    try:
+        server = smtplib.SMTP_SSL('smtp.gmail.com', port)
+        server.ehlo()
+        server.login(send_from, password)
+        server.sendmail(send_from, send_to, msg.as_string())
+        server.close()
+        print('Email sent!')
+    except:
+        print('Something went wrong...')
 
-    for path in files:
-        part = MIMEBase('application', "octet-stream")
-        with open(path, 'rb') as file:
-            part.set_payload(file.read())
-        encoders.encode_base64(part)
-        part.add_header('Content-Disposition','attachment; filename="{}"'.format(Path(path).name))
-        msg.attach(part)
 
-    smtp = smtplib.SMTP(server, port)
-    if use_tls:
-        smtp.starttls()
-    smtp.login(username, password)
-    smtp.sendmail(send_from, send_to, msg.as_string())
-    smtp.quit()
-
-def get_latest(file_path: str, get_days: int):
+def get_email_body(file_path: str, get_days: int):
 
     # load data and filter based on days
     df = pd.read_csv(file_path, quoting=csv.QUOTE_NONNUMERIC)
