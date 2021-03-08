@@ -9,7 +9,7 @@ port = 465
 
 subject = "Boliga Listings"
 archive_file_path = "./output/boliga.csv"
-body = get_email_body(archive_file_path, 1)
+market_days_old = 4
+body = get_email_body(archive_file_path, market_days_old)
 
-#print(body)
 send_ssl_mail(send_from, password, subject, body, server, port, send_to)

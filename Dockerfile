@@ -4,8 +4,6 @@ FROM arm32v7/python:3.8-slim-buster
 RUN mkdir -p /app/src
 WORKDIR /app
 
-# install wheel
-
 # using poetry, install project
 COPY src /app/src
 COPY static /app/static
