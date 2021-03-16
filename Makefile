@@ -1,3 +1,6 @@
+install:
+	poetry install --no-dev
+
 scrape:
 	poetry run python ./scripts/run_scraping.py
 
