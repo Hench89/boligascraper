@@ -10,7 +10,7 @@ Prerequisites
 * language-pack-da (sudo dpkg-reconfigure locales)
 * Poetry for python
 
-To install run the code `poetry install --no-dev`
+To install run the code `make install`
 
 ## How to run scraping
 
