@@ -1,23 +1,31 @@
-# BoligaScraper
+# Boliga Scraper
 
-This is a small tool to run through boliga.
-The tool will apply webscraping of Boliga.dk to fetch all listings in Region Hovedstaden,
+This is a small tool to fetch listings from Boliga.dk
 The result will be parsed into excel file
 
-## running on Debian
+## How to Install
 
-to run on debian like systems, you need following packages
+Prerequisites
 
 * language-pack-da (sudo dpkg-reconfigure locales)
-* libxml2-dev + libxslt-dev (required for lxml)
+* Poetry for python
 
+To install run the code `poetry install --no-dev`
 
-## running on docker
+## How to run scraping
 
-The project includes dockerfile to run in container.
+To retrieve listings, use the compute function from scraper.reader module.
+`df = compute(archive_path, zipcodes_path, stations_path)`
+See file scripts/run_scraping.py for an example.
 
-downgraded version of docker (https://github.com/portainer/portainer/issues/4585#issuecomment-751729241)
-curl -sSL https://get.docker.com | sed 's/docker-ce/docker-ce=5:19.03.13~3-0~raspbian-buster/' | sh
+## How to send email
 
-## secrets
-for debian: set environment variables in ~/.bashrc script
+To send data to an email address, use the send_ssl_mail function from reporting.emails module.
+`send_ssl_mail(send_from, password, subject, body, server, port, send_to)`
+See file scripts/send_email.py for an example.
+
+Important: set secrets in environment variables
+
+* MAILFROM: sender email
+* MAILPASSWORD: sender password
+* MAILTO: recipients list, semi-colon (;) separated
