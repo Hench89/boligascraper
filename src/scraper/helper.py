@@ -11,6 +11,7 @@ class BoligaHelper:
         self._clean_cols = ['boliga_id', 'address1', 'address2', 'zipcode', 'list_price', 'living_area',
                 'lot_area', 'rooms', 'floors', 'construction_date', 'energy_rating',
                 'taxes_pr_month', 'bsmnt_area', 'station_dist_km', 'created_date', 'url', 'gmaps']
+        self.df_lat_lng = pd.read_csv(stations_path)
 
 
     def get_lat_lng(self, address):
@@ -31,8 +32,7 @@ class BoligaHelper:
             if zipcode == '' or latlng == '':
                 return
 
-            df_lat_lng = pd.read_csv(self.stations_path)
-            point_a = df_lat_lng[str(zipcode)]
+            point_a = self.df_lat_lng[str(zipcode)]
             point_b = latlng
             dist = geodesic(point_a, point_b).km
 
