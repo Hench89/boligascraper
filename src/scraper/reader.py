@@ -27,7 +27,7 @@ def _get_whats_new(archive_path: str, zipcodes_path: str, bh: BoligaHelper):
         df_archive = pd.read_csv(archive_path, quoting=csv.QUOTE_NONNUMERIC)
         print('.. read %s listings from archive:' % len(df_archive))
     except FileNotFoundError:
-        df_archive = bh.get_empty_archive()
+        df_archive = None
         print('.. starting a new archive')
 
     # read from boliga
@@ -39,6 +39,13 @@ def _get_whats_new(archive_path: str, zipcodes_path: str, bh: BoligaHelper):
 
 
 def _make_update_plan(df_archive: pd.DataFrame, df_listings: pd.DataFrame) -> pd.DataFrame:
+
+    # if no archive, return only new items
+    if df_archive is None:
+        print('.. items to process: %s' % (len(df_listings)))
+        df_listings['boliga_id'] = np.int64(df_listings['boliga_id'])
+        df_add = df_listings
+        return df_archive, df_add
 
     # conversion
     df_listings['boliga_id'] = np.int64(df_listings['boliga_id'])
@@ -69,7 +76,10 @@ def _run_updates(df_archive, df_add, bh: BoligaHelper):
 
     # merged df
     try:
-        df = pd.concat([df_archive, df_add]).reset_index(drop=True)
+        if df_archive is None:
+            df = df_add
+        else:
+            df = pd.concat([df_archive, df_add]).reset_index(drop=True)
     except ValueError:
         df = df_archive
 

@@ -1,5 +1,6 @@
 from reporting.emails import send_ssl_mail, get_email_body
 import os
+import sys
 
 # retrieve environment variables
 try:
@@ -8,7 +9,7 @@ try:
     env_password = os.getenv('MAILPASSWORD')
 except:
     print('Unable to retrieve environment variables')
-    return
+    sys.exit()
 
 
 # prepare table
@@ -19,14 +20,15 @@ try:
     )
 except:
     print('Unable to read and prepare table from archive')
+    sys.exit()
 
 # send email
 send_ssl_mail(
     send_from = env_send_from, 
     password = env_password,
     subject = "Boliga Listings",
-    body = body 
-    server = "smtp.gmail.com"
+    body = body,
+    server = "smtp.gmail.com",
     port = 465, 
     send_to = env_send_to
 )

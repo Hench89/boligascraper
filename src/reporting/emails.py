@@ -24,7 +24,7 @@ def send_ssl_mail(send_from, password, subject, body, server, port, send_to):
         server.close()
         print('Email sent!')
     except:
-        print('Something went wrong...')
+        print('Something went wrong while trying to send email...')
 
 
 def get_email_body(file_path: str, get_days: int):
