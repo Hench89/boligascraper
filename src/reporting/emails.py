@@ -34,18 +34,19 @@ def get_email_body(file_path: str, get_days: int):
     df['market_days'] = np.int64(df['market_days'])
     df = df[df['market_days'] <= get_days].reset_index()
 
-    # finetune column types
+    # finetune columns
     df['index'] = df.index +1
     df['list_price'] = np.round(np.int64(df['list_price']),0)
     df['living_area'] = np.round(np.int64(df['living_area']),0)
     df['rooms'] = np.round(np.int64(df['rooms']),0)
     df['market_days'] = np.round(np.int64(df['market_days']),0)
-    df['url'] = "LINKSTART" + df['url'] + "LINKEND"
+    df['url'] = "URLSTART" + df['url'] + "URLEND"
+    df = df[output_columns]
 
     # put together
     output_columns = ['index', 'address1', 'address2', 'list_price', 'living_area', 'rooms', 'url', 'market_days']
-    html_table_blue_light = build_table(df[output_columns], 'red_dark')
-    html_table_blue_light = html_table_blue_light.replace("LINKSTART", "<a href=\"")
-    html_table_blue_light = html_table_blue_light.replace("LINKEND", "\">LINK</a>")
+    html_table = build_table(df, 'red_dark')
+    html_table = html_table.replace("URLSTART", "<a href=\"")
+    html_table = html_table.replace("URLEND", "\">LINK</a>")
 
-    return html_table_blue_light
+    return html_table
