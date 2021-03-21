@@ -7,8 +7,12 @@ The result will be parsed into excel file
 
 Prerequisites
 
-* language-pack-da (sudo dpkg-reconfigure locales)
-* Poetry for python
+* python<br>
+    `sudo apt-get install python3 python3-distutils`
+* language pack cnfigure to da_DK.UTF-8<br>
+    `sudo dpkg-reconfigure locales`
+* Poetry for python<br>
+`curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -`
 
 To install run the code `make install`
 
@@ -29,3 +33,12 @@ Important: set secrets in environment variables
 * MAILFROM: sender email
 * MAILPASSWORD: sender password
 * MAILTO: recipients list, semi-colon (;) separated
+
+## Setting up a cronjob
+
+The code can be run through linux cronjob (e.g. on a raspberry pi) using crontab.
+See attached script/cron/ for an example that:
+
+* runs the job every day at 15:00
+* calls a bash script to run the code correctly
+* logs outputs into out.txt for debugging
