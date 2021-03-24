@@ -2,7 +2,6 @@ import mechanicalsoup as ms
 import pandas as pd
 import numpy as np
 import re
-from scraper.helper import BoligaHelper
 
 
 def get_bolig_list(zipcodes: pd.DataFrame) -> pd.DataFrame:
@@ -70,7 +69,7 @@ def _read_pages_to_process(browser, zipcode):
     return pages
 
 
-def read_bolig(boliga_listings, bh: BoligaHelper) -> pd.DataFrame:
+def read_bolig(boliga_listings) -> pd.DataFrame:
 
     browser = ms.StatefulBrowser()
     processed_listings = []
@@ -94,8 +93,7 @@ def read_bolig(boliga_listings, bh: BoligaHelper) -> pd.DataFrame:
         df_raw = pd.DataFrame(d, index=[0])
 
         # cleaning and extending dataframe
-        df_fancy = bh.make_fancy(df_raw)
-        processed_listings.append(df_fancy)
+        processed_listings.append(df_raw)
 
     if len(processed_listings) > 0:
         return pd.concat(processed_listings)
@@ -151,3 +149,4 @@ def _process_section_b(soup):
             d[icon_name] = icon_value
 
     return d
+

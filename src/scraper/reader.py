@@ -2,25 +2,26 @@ import pandas as pd
 import numpy as np
 import csv
 from scraper.boliga import get_bolig_list, read_bolig
-from scraper.helper import BoligaHelper
+from geo.geo import StationDist, get_dk_lat_lng
+from datetime import datetime, date
+import re
+
 
 def compute(archive_path: str, zipcodes_path: str, stations_path: str) -> pd.DataFrame:
 
-    bh = BoligaHelper(stations_path)
-
     print("step %s: reading archive and new listings" % 1)
-    df_archive, df_listings = _get_whats_new(archive_path, zipcodes_path, bh)
+    df_archive, df_listings = _get_whats_new(archive_path, zipcodes_path)
 
     print("step %s: identifying differences" % 2)
     df_archive, df_add = _make_update_plan(df_archive, df_listings)
 
     print("step %s: updating archive" % 3)
-    df = _run_updates(df_archive, df_add, bh)
+    df = _run_updates(df_archive, df_add, stations_path)
 
     return df
 
 
-def _get_whats_new(archive_path: str, zipcodes_path: str, bh: BoligaHelper):
+def _get_whats_new(archive_path: str, zipcodes_path: str):
 
     # read from archive
     try:
@@ -67,14 +68,15 @@ def _make_update_plan(df_archive: pd.DataFrame, df_listings: pd.DataFrame) -> pd
     return df_archive, df_add
 
 
-def _run_updates(df_archive, df_add, bh: BoligaHelper):
+def _run_updates(df_archive, df_add, stations_path):
 
     # process items
     if len(df_add) > 0:
         items_to_process = df_add[['boliga_id', 'zipcode']].to_numpy()
-        df_add = read_bolig(items_to_process, bh)
+        df_raw = read_bolig(items_to_process)
+        df_fancy = _make_fancy(df_raw, stations_path)
 
-    # merged df
+    # create merged df
     try:
         if df_archive is None:
             df = df_add
@@ -86,8 +88,71 @@ def _run_updates(df_archive, df_add, bh: BoligaHelper):
     # remove duplicates
     df = df.groupby(['boliga_id']).head(1)
 
-    # date related data
-    df['market_days'] = df.apply(lambda x: bh.days_on_market(x.created_date), axis=1)
+    # reorder merged list
     df = df.sort_values(by=['market_days', 'list_price']).reset_index(drop=True)
+
+    return df
+
+
+def _make_fancy(df, stations_path):
+
+    # rename some columns
+    df = df.rename(
+        columns={
+            '#icon-square': 'living_area',
+            '#icon-lot-size': 'lot_area',
+            '#icon-rooms': 'rooms',
+            '#icon-floor': 'floors',
+            '#icon-construction-year': 'construction_date',
+            '#icon-energy': 'energy_rating',
+            '#icon-taxes': 'taxes_pr_month',
+            '#icon-basement-size': 'bsmnt_area',
+
+        }
+    )
+
+    # split address
+    df['address1'] = df['address'].apply(lambda x: x.split(',')[0])
+    df['address2'] = df['address'].apply(lambda x: x.split(',')[1])
+    df = df.drop(columns=['address'])
+
+    # numerical columns
+    trim = re.compile(r'[^\d]+')
+    df['list_price'] = df['list_price'].apply(lambda x: trim.sub('', x))
+    df['living_area'] = df['living_area'].apply(lambda x: trim.sub('', x))
+    df['lot_area'] = df['lot_area'].apply(lambda x: trim.sub('', x))
+    df['floors'] = df['floors'].apply(lambda x: trim.sub('', x))
+    df['taxes_pr_month'] = df['taxes_pr_month'].apply(lambda x: trim.sub('', x))
+    df['bsmnt_area'] = df['bsmnt_area'].apply(lambda x: trim.sub('', x))
+
+    # cleaning of created date
+    def date_clean(date_string):
+        date_string = date_string.replace('Oprettet ', '').replace('.', '')
+        date_value = datetime.strptime(date_string, '%d %b %Y')
+        return date_value
+    df['created_date'] = df['created_date'].apply(lambda x: date_clean(x))
+
+    # geo related data
+    sd = StationDist(stations_path)
+    df['latlng'] = df['address1'].apply(lambda x: get_dk_lat_lng(x))
+    df['gmaps'] = df['latlng'].apply(lambda x: 'https://maps.google.com/?q=' + str(x))
+    df['station_dist_km'] = df.apply(lambda x: sd.get_dist_to_station(x.zipcode, x.latlng), axis=1)
+
+    # set days on market
+    def days_on_market(created_date_string):
+        try:
+            today_date = date.today()
+            created_date_string = str(created_date_string)[:10]
+            created_date = datetime.strptime(created_date_string, '%Y-%m-%d').date()
+            return (today_date - created_date).days
+        except ValueError:
+            return ''
+    df['market_days'] = df.apply(lambda x: days_on_market(x.created_date), axis=1)
+
+    # cleaned columns
+    clean_cols = ['boliga_id', 'address1', 'address2', 'zipcode', 'list_price', 'living_area', 
+        'lot_area', 'rooms', 'floors', 'construction_date', 'energy_rating',
+        'taxes_pr_month', 'bsmnt_area', 'station_dist_km', 'created_date', 'url', 'gmaps']
+    df = df[clean_cols]
 
     return df
