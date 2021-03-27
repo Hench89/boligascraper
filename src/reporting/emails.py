@@ -6,6 +6,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from pretty_html_table import build_table
 
+
 def send_ssl_mail(send_from, password, subject, body, server, port, send_to):
 
     msg = MIMEMultipart('related')
@@ -41,10 +42,11 @@ def get_email_body(file_path: str, get_days: int):
     df['rooms'] = np.round(np.int64(df['rooms']),0)
     df['market_days'] = np.round(np.int64(df['market_days']),0)
     df['url'] = "URLSTART" + df['url'] + "URLEND"
+    df['gmaps'] = "URLSTART" + df['gmaps'] + "URLEND"
     df = df[output_columns]
 
     # put together
-    output_columns = ['index', 'address1', 'address2', 'list_price', 'living_area', 'rooms', 'url', 'market_days']
+    output_columns = ['index', 'address1', 'address2', 'list_price', 'living_area', 'rooms', 'url', 'gmaps', 'market_days']
     html_table = build_table(df, 'red_dark')
     html_table = html_table.replace("URLSTART", "<a href=\"")
     html_table = html_table.replace("URLEND", "\">LINK</a>")

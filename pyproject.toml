@@ -6,7 +6,8 @@ authors = ["Henrik Christoffersen"]
 
 packages = [
     { include = "scraper", from = "src" },
-    { include = "reporting", from = "src" }
+    { include = "reporting", from = "src" },
+    { include = "dfutils", from = "src" }
 ]
 
 [tool.poetry.dependencies]

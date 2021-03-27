@@ -2,7 +2,8 @@ import pandas as pd
 import numpy as np
 import csv
 from scraper.boliga import get_bolig_list, read_bolig
-from geo.geo import StationDist, get_dk_lat_lng
+from dfutils.geo import get_dk_lat_lng, get_nearest_station
+from dfutils.dates import date_clean, days_on_market
 from datetime import datetime, date
 import re
 
@@ -27,7 +28,7 @@ def _get_whats_new(archive_path: str, zipcodes_path: str):
     try:
         df_archive = pd.read_csv(archive_path, quoting=csv.QUOTE_NONNUMERIC)
         print('.. read %s listings from archive:' % len(df_archive))
-    except FileNotFoundError:
+    except Exception as e:
         df_archive = None
         print('.. starting a new archive')
 
@@ -73,15 +74,18 @@ def _run_updates(df_archive, df_add, stations_path):
     # process items
     if len(df_add) > 0:
         items_to_process = df_add[['boliga_id', 'zipcode']].to_numpy()
-        df_raw = read_bolig(items_to_process)
-        df_fancy = _make_fancy(df_raw, stations_path)
+        df_processed = read_bolig(items_to_process)
+        df_cleaned = _make_fancy(df_processed, stations_path)
+        
+
+    df_cleaned.to_csv('cleaned.csv')
 
     # create merged df
     try:
         if df_archive is None:
-            df = df_add
+            df = df_cleaned
         else:
-            df = pd.concat([df_archive, df_add]).reset_index(drop=True)
+            df = pd.concat([df_archive, df_cleaned]).reset_index(drop=True)
     except ValueError:
         df = df_archive
 
@@ -125,34 +129,23 @@ def _make_fancy(df, stations_path):
     df['taxes_pr_month'] = df['taxes_pr_month'].apply(lambda x: trim.sub('', x))
     df['bsmnt_area'] = df['bsmnt_area'].apply(lambda x: trim.sub('', x))
 
-    # cleaning of created date
-    def date_clean(date_string):
-        date_string = date_string.replace('Oprettet ', '').replace('.', '')
-        date_value = datetime.strptime(date_string, '%d %b %Y')
-        return date_value
-    df['created_date'] = df['created_date'].apply(lambda x: date_clean(x))
-
-    # geo related data
-    sd = StationDist(stations_path)
+    # geo related columns
+    df_stations = pd.read_csv(stations_path)
     df['latlng'] = df['address1'].apply(lambda x: get_dk_lat_lng(x))
     df['gmaps'] = df['latlng'].apply(lambda x: 'https://maps.google.com/?q=' + str(x))
-    df['station_dist_km'] = df.apply(lambda x: sd.get_dist_to_station(x.zipcode, x.latlng), axis=1)
+    df['station_dist_km'] = df.apply(lambda x: get_nearest_station(df_stations, x.latlng), axis=1)
 
-    # set days on market
-    def days_on_market(created_date_string):
-        try:
-            today_date = date.today()
-            created_date_string = str(created_date_string)[:10]
-            created_date = datetime.strptime(created_date_string, '%Y-%m-%d').date()
-            return (today_date - created_date).days
-        except ValueError:
-            return ''
+    # date related columns
+    df['created_date'] = df['created_date'].apply(lambda x: date_clean(x))
     df['market_days'] = df.apply(lambda x: days_on_market(x.created_date), axis=1)
 
     # cleaned columns
-    clean_cols = ['boliga_id', 'address1', 'address2', 'zipcode', 'list_price', 'living_area', 
-        'lot_area', 'rooms', 'floors', 'construction_date', 'energy_rating',
-        'taxes_pr_month', 'bsmnt_area', 'station_dist_km', 'created_date', 'url', 'gmaps']
-    df = df[clean_cols]
+    clean_cols = [
+        'boliga_id', 'address1', 'address2', 'zipcode', 
+        'list_price', 'living_area', 'lot_area', 'rooms', 
+        'floors', 'construction_date', 'energy_rating', 'taxes_pr_month', 
+        'bsmnt_area', 'station_dist_km', 'created_date', 'url', 
+        'gmaps', 'market_days'
+    ]
 
-    return df
+    return df[clean_cols]
