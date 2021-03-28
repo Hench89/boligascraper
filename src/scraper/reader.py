@@ -72,29 +72,37 @@ def _make_update_plan(df_archive: pd.DataFrame, df_listings: pd.DataFrame) -> pd
 
 def _run_updates(df_archive, df_add, df_stations):
 
-    # process items
-    if len(df_add) > 0:
+    is_items_to_process = True if len(df_add) > 0 else False
+    is_empty_archive = True if df_archive is None else False
+
+    # no archive and nothing to process
+    if is_empty_archive and not is_items_to_process:
+        return None
+
+    # nothing to process
+    elif not is_items_to_process:
+        df = df_archive
+
+    else:
         items_to_process = df_add[['boliga_id', 'zipcode']].to_numpy()
         df_processed = read_bolig(items_to_process)
+
+        print(".. cleaning new items")
         df_cleaned = _make_fancy(df_processed, df_stations)
-        
 
-    df_cleaned.to_csv('cleaned.csv')
-
-    # create merged df
-    try:
-        if df_archive is None:
+        if is_empty_archive:
             df = df_cleaned
         else:
             df = pd.concat([df_archive, df_cleaned]).reset_index(drop=True)
-    except ValueError:
-        df = df_archive
 
     # remove duplicates
     df = df.groupby(['boliga_id']).head(1)
 
     # reorder merged list
     df = df.sort_values(by=['market_days', 'list_price']).reset_index(drop=True)
+
+    # set market_days again
+    df['market_days'] = df.apply(lambda x: days_on_market(x.created_date), axis=1)
 
     return df
 
@@ -137,7 +145,6 @@ def _make_fancy(df, df_stations):
 
     # date related columns
     df['created_date'] = df['created_date'].apply(lambda x: date_clean(x))
-    df['market_days'] = df.apply(lambda x: days_on_market(x.created_date), axis=1)
 
     # cleaned columns
     clean_cols = [
@@ -145,7 +152,7 @@ def _make_fancy(df, df_stations):
         'list_price', 'living_area', 'lot_area', 'rooms', 
         'floors', 'construction_date', 'energy_rating', 'taxes_pr_month', 
         'bsmnt_area', 'station_dist_km', 'created_date', 'url', 
-        'gmaps', 'market_days'
+        'gmaps'
     ]
 
     return df[clean_cols]
