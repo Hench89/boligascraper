@@ -17,7 +17,8 @@ def compute(archive_path: str, zipcodes_path: str, stations_path: str) -> pd.Dat
     df_archive, df_add = _make_update_plan(df_archive, df_listings)
 
     print("step %s: updating archive" % 3)
-    df = _run_updates(df_archive, df_add, stations_path)
+    df_stations = pd.read_csv(stations_path)
+    df = _run_updates(df_archive, df_add, df_stations)
 
     return df
 
@@ -69,13 +70,13 @@ def _make_update_plan(df_archive: pd.DataFrame, df_listings: pd.DataFrame) -> pd
     return df_archive, df_add
 
 
-def _run_updates(df_archive, df_add, stations_path):
+def _run_updates(df_archive, df_add, df_stations):
 
     # process items
     if len(df_add) > 0:
         items_to_process = df_add[['boliga_id', 'zipcode']].to_numpy()
         df_processed = read_bolig(items_to_process)
-        df_cleaned = _make_fancy(df_processed, stations_path)
+        df_cleaned = _make_fancy(df_processed, df_stations)
         
 
     df_cleaned.to_csv('cleaned.csv')
@@ -98,7 +99,7 @@ def _run_updates(df_archive, df_add, stations_path):
     return df
 
 
-def _make_fancy(df, stations_path):
+def _make_fancy(df, df_stations):
 
     # rename some columns
     df = df.rename(
@@ -130,7 +131,6 @@ def _make_fancy(df, stations_path):
     df['bsmnt_area'] = df['bsmnt_area'].apply(lambda x: trim.sub('', x))
 
     # geo related columns
-    df_stations = pd.read_csv(stations_path)
     df['latlng'] = df['address1'].apply(lambda x: get_dk_lat_lng(x))
     df['gmaps'] = df['latlng'].apply(lambda x: 'https://maps.google.com/?q=' + str(x))
     df['station_dist_km'] = df.apply(lambda x: get_nearest_station(df_stations, x.latlng), axis=1)
