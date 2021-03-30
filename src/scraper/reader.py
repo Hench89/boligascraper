@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import csv
-from scraper.boliga import get_browser, get_listings, read_bolig
+from scraper.boliga import get_listings_from_list, get_bolig_from_list
 from dfutils.geo import get_dk_lat_lng, get_nearest_station
 from dfutils.dates import days_on_market
 
@@ -19,8 +19,8 @@ def compute(archive_path, zipcodes_path, stations_path):
     # read new items
     print("step %s: reading current listings" % 2)
     df_zip = pd.read_csv(zipcodes_path)
-    df_zip = df_zip[df_zip.columns[0]]
-    listings = _get_current_listings(df_zip)
+    zipcode_list = df_zip[df_zip.columns[0]]
+    listings = get_listings_from_list(zipcode_list)
 
     print("step %s: identifying differences" % 3)
     updated_archive, new_items = _make_update_plan(df_archive, listings)
@@ -31,21 +31,6 @@ def compute(archive_path, zipcodes_path, stations_path):
 
     return df
 
-
-def _get_current_listings(zipcodes):
-
-    all_listings = []
-    browser = get_browser()
-    for index, zipcode in enumerate(zipcodes):
-
-        print(".. finding listings in %s (%s of %s)" % (zipcode, index+1, len(zipcodes)))
-        all_listings = all_listings + get_listings(browser, zipcode)
-
-    # remove duplicates
-    all_listings = list(dict.fromkeys(all_listings))
-    print(".. found %s total listings" % (len(all_listings)))
-
-    return all_listings
 
 
 def _make_update_plan(df_archive, listings):
@@ -91,13 +76,7 @@ def _run_updates(updated_archive, new_items, df_stations):
     else:
 
         # fetch new data
-        frames = []
-        browser = get_browser()
-        for index, boliga_id in enumerate(new_items):
-            print(".. processing id %s (%s of %s)" % (boliga_id, index+1, len(new_items)))
-            frame = read_bolig(browser, boliga_id)
-            frames.append(frame)
-        df_processed = pd.concat(frames)
+        df_processed = get_bolig_from_list(new_items)
 
         # enrich with geo related columns
         print(".. adding geo related information to listings")

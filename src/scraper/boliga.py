@@ -5,8 +5,6 @@ from dfutils.geo import get_dk_lat_lng, get_nearest_station
 from dfutils.dates import date_clean
 import re
 
-def get_browser():
-    return ms.StatefulBrowser()
 
 def get_listings(browser, zipcode):
 
@@ -41,7 +39,8 @@ def get_listings(browser, zipcode):
 
     return listings
 
-def read_bolig(browser, boliga_id):
+
+def read_bolig(browser : ms.StatefulBrowser(), boliga_id):
     
     # open page and get soup
     url = "https://www.boliga.dk/bolig/" + str(boliga_id)
@@ -54,7 +53,11 @@ def read_bolig(browser, boliga_id):
     # fetch title
     title = soup.find_all('title')[0]
     title = title.get_text().strip()
-    d['address'] = title.replace('Til salg:', '')
+
+    # for sale or sold?
+    address = title.split(':')
+    d['address'] = address[1]
+    d['for_sale'] = 1 if address == 'Tidligere salg på' else 0    
 
     # retrieve and process section a
     section_a = soup.find_all('div', attrs={'class': 'row no-gutters'})[0]
@@ -113,6 +116,36 @@ def read_bolig(browser, boliga_id):
     ordered_columns = [
             'boliga_id', 'property_type', 'address', 'list_price', 'living_area', 'lot_area', 'rooms', 
             'floors', 'construction_date', 'energy_rating', 'taxes_pr_month', 
-            'bsmnt_area', 'created_date', 'url'
+            'bsmnt_area', 'created_date', 'url', 'for_sale'
     ]
     return df[ordered_columns]
+
+
+def get_bolig_from_list(id_list):
+
+    browser =  ms.StatefulBrowser()
+    frames = []
+
+    for index, boliga_id in enumerate(id_list):
+        print(".. processing id %s (%s of %s)" % (boliga_id, index+1, len(id_list)))
+        frame = read_bolig(browser, boliga_id)
+        frames.append(frame)
+    
+    return pd.concat(frames)
+
+
+def get_listings_from_list(zipcodes):
+
+    browser =  ms.StatefulBrowser()
+    all_listings = []
+
+    for index, zipcode in enumerate(zipcodes):
+
+        print(".. finding listings in %s (%s of %s)" % (zipcode, index+1, len(zipcodes)))
+        all_listings = all_listings + get_listings(browser, zipcode)
+
+    # remove duplicates
+    all_listings = list(dict.fromkeys(all_listings))
+    print(".. found %s total listings" % (len(all_listings)))
+
+    return all_listings

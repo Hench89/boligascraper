@@ -7,12 +7,8 @@ import traceback
 
 def get_dk_lat_lng(address):
 
-    def uo(args, **kwargs):
-        return urllib.request.urlopen(args, cafile=certifi.where(), **kwargs)
-
     try:
-        geolocator = Nominatim(user_agent="myapp", timeout=3, scheme='http')
-        geolocator.urlopen = uo 
+        geolocator = Nominatim(user_agent="myapp")
         loc = geolocator.geocode(query=address, language='da', country_codes='Denmark')
         return loc.raw['lat'] + ',' + loc.raw['lon']
 
