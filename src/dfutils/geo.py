@@ -1,14 +1,21 @@
 from geopy.distance import geodesic
 from geopy.geocoders import Nominatim
+import urllib
+import certifi
 import pandas as pd
-
+import traceback
 
 def get_dk_lat_lng(address):
+
+    def uo(args, **kwargs):
+        return urllib.request.urlopen(args, cafile=certifi.where(), **kwargs)
+
     try:
-        geolocator = Nominatim(user_agent="myapp")
+        geolocator = Nominatim(user_agent="myapp", timeout=3, scheme='http')
+        geolocator.urlopen = uo 
         loc = geolocator.geocode(query=address, language='da', country_codes='Denmark')
-        lat_lon = loc.raw['lat'] + ',' + loc.raw['lon']
-        return lat_lon
+        return loc.raw['lat'] + ',' + loc.raw['lon']
+
     except Exception:
         return ''
 

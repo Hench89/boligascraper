@@ -1,31 +1,14 @@
 import pandas as pd
 import numpy as np
 import csv
-from scraper.boliga import get_bolig_list, read_bolig
+from scraper.boliga import get_browser, get_listings, read_bolig
 from dfutils.geo import get_dk_lat_lng, get_nearest_station
-from dfutils.dates import date_clean, days_on_market
-from datetime import datetime, date
-import re
+from dfutils.dates import days_on_market
 
+def compute(archive_path, zipcodes_path, stations_path):
 
-def compute(archive_path: str, zipcodes_path: str, stations_path: str) -> pd.DataFrame:
-
-    print("step %s: reading archive and new listings" % 1)
-    df_archive, df_listings = _get_whats_new(archive_path, zipcodes_path)
-
-    print("step %s: identifying differences" % 2)
-    df_archive, df_add = _make_update_plan(df_archive, df_listings)
-
-    print("step %s: updating archive" % 3)
-    df_stations = pd.read_csv(stations_path)
-    df = _run_updates(df_archive, df_add, df_stations)
-
-    return df
-
-
-def _get_whats_new(archive_path: str, zipcodes_path: str):
-
-    # read from archive
+    # read archive
+    print("step %s: reading archive" % 1)
     try:
         df_archive = pd.read_csv(archive_path, quoting=csv.QUOTE_NONNUMERIC)
         print('.. read %s listings from archive:' % len(df_archive))
@@ -33,47 +16,69 @@ def _get_whats_new(archive_path: str, zipcodes_path: str):
         df_archive = None
         print('.. starting a new archive')
 
-    # read from boliga
-    print('.. fetching all listings from boliga')
-    df_zip = pd.read_csv(zipcodes_path, sep=',')
-    df_listings = get_bolig_list(df_zip)
+    # read new items
+    print("step %s: reading current listings" % 2)
+    df_zip = pd.read_csv(zipcodes_path)
+    df_zip = df_zip[df_zip.columns[0]]
+    listings = _get_current_listings(df_zip)
 
-    return df_archive, df_listings
+    print("step %s: identifying differences" % 3)
+    updated_archive, new_items = _make_update_plan(df_archive, listings)
+
+    print("step %s: updating archive" % 4)
+    df_stations = pd.read_csv(stations_path, sep=',')
+    df = _run_updates(updated_archive, new_items, df_stations)
+
+    return df
 
 
-def _make_update_plan(df_archive: pd.DataFrame, df_listings: pd.DataFrame) -> pd.DataFrame:
+def _get_current_listings(zipcodes):
+
+    all_listings = []
+    browser = get_browser()
+    for index, zipcode in enumerate(zipcodes):
+
+        print(".. finding listings in %s (%s of %s)" % (zipcode, index+1, len(zipcodes)))
+        all_listings = all_listings + get_listings(browser, zipcode)
+
+    # remove duplicates
+    all_listings = list(dict.fromkeys(all_listings))
+    print(".. found %s total listings" % (len(all_listings)))
+
+    return all_listings
+
+
+def _make_update_plan(df_archive, listings):
 
     # if no archive, return only new items
     if df_archive is None:
-        print('.. items to process: %s' % (len(df_listings)))
-        df_listings['boliga_id'] = np.int64(df_listings['boliga_id'])
-        df_add = df_listings
-        return df_archive, df_add
+        print('.. items to process: %s' % (len(listings)))
+        return None, np.int64(listings)
 
     # conversion
-    df_listings['boliga_id'] = np.int64(df_listings['boliga_id'])
-    df_archive['boliga_id'] = np.int64(df_archive['boliga_id'])
+    listings = np.int64(listings)
+    archive = np.int64(df_archive['boliga_id'])
 
     # ids to remove and insert
-    seta = set(df_listings['boliga_id'])
-    setb = set(df_archive['boliga_id'])
+    seta = set(listings)
+    setb = set(archive)
     set_rem = setb.difference(seta)
     set_add = seta.difference(setb)
 
     print('.. new items to process: %s' % (len(set_add)))
     print('.. items to remove from archive: %s' % len(set_rem))
 
-    # remove from old, a
-    df_archive = df_archive[~df_archive['boliga_id'].isin(set_rem)].reset_index(drop=True)
-    df_add = df_listings[df_listings['boliga_id'].isin(set_add)].reset_index(drop=True)
+    # update
+    updated_archive = df_archive[~df_archive['boliga_id'].isin(set_rem)].reset_index(drop=True)
+    new_items = list(set_add)
 
-    return df_archive, df_add
+    return updated_archive, new_items
 
 
-def _run_updates(df_archive, df_add, df_stations):
+def _run_updates(updated_archive, new_items, df_stations):
 
-    is_items_to_process = True if len(df_add) > 0 else False
-    is_empty_archive = True if df_archive is None else False
+    is_items_to_process = True if len(new_items) > 0 else False
+    is_empty_archive = True if updated_archive is None else False
 
     # no archive and nothing to process
     if is_empty_archive and not is_items_to_process:
@@ -81,78 +86,39 @@ def _run_updates(df_archive, df_add, df_stations):
 
     # nothing to process
     elif not is_items_to_process:
-        df = df_archive
+        df = updated_archive
 
     else:
-        items_to_process = df_add[['boliga_id', 'zipcode']].to_numpy()
-        df_processed = read_bolig(items_to_process)
 
-        print(".. cleaning new items")
-        df_cleaned = _make_fancy(df_processed, df_stations)
+        # fetch new data
+        frames = []
+        browser = get_browser()
+        for index, boliga_id in enumerate(new_items):
+            print(".. processing id %s (%s of %s)" % (boliga_id, index+1, len(new_items)))
+            frame = read_bolig(browser, boliga_id)
+            frames.append(frame)
+        df_processed = pd.concat(frames)
 
+        # enrich with geo related columns
+        print(".. adding geo related information to listings")
+        df_processed['latlng'] = df_processed.apply(lambda x: get_dk_lat_lng(x.address), axis=1)
+        df_processed['gmaps'] = df_processed['latlng'].apply(lambda x: 'https://maps.google.com/?q=' + str(x))
+        df_processed['station_dist_km'] = df_processed.apply(lambda x: get_nearest_station(df_stations, x.latlng), axis=1)
+
+        # merge with archive
         if is_empty_archive:
-            df = df_cleaned
+            df = df_processed
         else:
-            df = pd.concat([df_archive, df_cleaned]).reset_index(drop=True)
+            df = pd.concat([updated_archive, df_processed]).reset_index(drop=True)
 
     # remove duplicates
     df = df.groupby(['boliga_id']).head(1)
 
-    # reorder merged list
-    df = df.sort_values(by=['market_days', 'list_price']).reset_index(drop=True)
-
     # set market_days again
     df['market_days'] = df.apply(lambda x: days_on_market(x.created_date), axis=1)
 
+    # reorder merged list
+    df = df.sort_values(by=['market_days', 'list_price']).reset_index(drop=True)
+
+    
     return df
-
-
-def _make_fancy(df, df_stations):
-
-    # rename some columns
-    df = df.rename(
-        columns={
-            '#icon-square': 'living_area',
-            '#icon-lot-size': 'lot_area',
-            '#icon-rooms': 'rooms',
-            '#icon-floor': 'floors',
-            '#icon-construction-year': 'construction_date',
-            '#icon-energy': 'energy_rating',
-            '#icon-taxes': 'taxes_pr_month',
-            '#icon-basement-size': 'bsmnt_area',
-
-        }
-    )
-
-    # split address
-    df['address1'] = df['address'].apply(lambda x: x.split(',')[0])
-    df['address2'] = df['address'].apply(lambda x: x.split(',')[1])
-    df = df.drop(columns=['address'])
-
-    # numerical columns
-    trim = re.compile(r'[^\d]+')
-    df['list_price'] = df['list_price'].apply(lambda x: trim.sub('', x))
-    df['living_area'] = df['living_area'].apply(lambda x: trim.sub('', x))
-    df['lot_area'] = df['lot_area'].apply(lambda x: trim.sub('', x))
-    df['floors'] = df['floors'].apply(lambda x: trim.sub('', x))
-    df['taxes_pr_month'] = df['taxes_pr_month'].apply(lambda x: trim.sub('', x))
-    df['bsmnt_area'] = df['bsmnt_area'].apply(lambda x: trim.sub('', x))
-
-    # geo related columns
-    df['latlng'] = df['address1'].apply(lambda x: get_dk_lat_lng(x))
-    df['gmaps'] = df['latlng'].apply(lambda x: 'https://maps.google.com/?q=' + str(x))
-    df['station_dist_km'] = df.apply(lambda x: get_nearest_station(df_stations, x.latlng), axis=1)
-
-    # date related columns
-    df['created_date'] = df['created_date'].apply(lambda x: date_clean(x))
-
-    # cleaned columns
-    clean_cols = [
-        'boliga_id', 'address1', 'address2', 'zipcode', 
-        'list_price', 'living_area', 'lot_area', 'rooms', 
-        'floors', 'construction_date', 'energy_rating', 'taxes_pr_month', 
-        'bsmnt_area', 'station_dist_km', 'created_date', 'url', 
-        'gmaps'
-    ]
-
-    return df[clean_cols]

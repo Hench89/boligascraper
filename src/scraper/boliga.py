@@ -1,152 +1,118 @@
 import mechanicalsoup as ms
 import pandas as pd
 import numpy as np
+from dfutils.geo import get_dk_lat_lng, get_nearest_station
+from dfutils.dates import date_clean
 import re
 
+def get_browser():
+    return ms.StatefulBrowser()
 
-def get_bolig_list(zipcodes: pd.DataFrame) -> pd.DataFrame:
+def get_listings(browser, zipcode):
 
-    # setup
-    listings = []
-    browser = ms.StatefulBrowser()
+    # identify pages to process
+    browser.open("https://www.boliga.dk/resultat?zipCodes=" + str(zipcode) + "&propertyType=1,2")
+    soup = browser.get_current_page()
 
-    # get zipcodes
-    for index, zipcode in enumerate(zipcodes['zipcode']):
-
-        zipcode_list = _read_zipcode(browser, str(zipcode))
-        for item in zipcode_list:
-            listings.append(item)
-
-        print(".. finding listings in %s (%s of %s)" % (zipcode, index+1, len(zipcodes)))
-
-
-    # return as dataframe
-    df = pd.DataFrame(listings)
-    df = df.drop_duplicates(subset='boliga_id', keep="last")
-    df = df.reset_index(drop=True)
-
-    return df
-
-
-def _read_zipcode(browser, zipcode):
-
-    pages_to_process = _read_pages_to_process(browser, zipcode)
-    url_list = []
-
-    for p in range(1, pages_to_process + 1):
-
-        # open page
-        url = "https://www.boliga.dk/resultat?zipCodes=" + zipcode + "&page=" + str(p) + "&propertyType=1"
-        browser.open(url)
-
-        # retrieve listings
-        html = browser.get_current_page()
-        a = html.find_all('a', attrs={'href': re.compile("^/bolig/")})
-        for item in a:
-            full_id = item.get('href')
-            boliga_id = re.search(r'\d+', full_id).group(0)
-            url_list.append({'boliga_id': boliga_id, 'zipcode': zipcode})
-
-    return url_list
-
-
-def _read_pages_to_process(browser, zipcode):
-
-    # open page
-    browser.open("https://www.boliga.dk/resultat?zipCodes=" + zipcode + "&propertyType=1")
-    html = browser.get_current_page()
-
-    # get page stats
     try:
-        pg_stats = html.find_all('div', attrs={'class': re.compile('paging-stats')})
+        pg_stats = soup.find_all('div', attrs={'class': re.compile('paging-stats')})
         pg_stats = pg_stats[-1].get_text()
         listings_count = re.search(r'(\d+)(?!.*\d)', pg_stats).group(0)
         listings_num = int(listings_count)
         pages = int(np.ceil(int(listings_count) / 50))
     except IndexError:
-        return 0
+        pages = 0
 
-    return pages
+    # fetch listings
+    listings = []
+    for p in range(1, pages + 1):
 
+        # open page
+        url = "https://www.boliga.dk/resultat?zipCodes=" + str(zipcode) + "&page=" + str(p) + "&propertyType=1,2"
+        browser.open(url)
 
-def read_bolig(boliga_listings) -> pd.DataFrame:
+        # retrieve listings
+        soup = browser.get_current_page()
+        a = soup.find_all('a', attrs={'href': re.compile("^/bolig/")})
+        for item in a:
+            full_id = item.get('href')
+            boliga_id = re.search(r'\d+', full_id).group(0)
+            listings.append(boliga_id)
 
-    browser = ms.StatefulBrowser()
-    processed_listings = []
+    return listings
 
-    for index, item in enumerate(boliga_listings):
-
-        # unpack
-        boliga_id = item[0]
-        zipcode = item[1]
-        print(".. processing id %s in %s (%s of %s)" % (boliga_id, zipcode, index+1, len(boliga_listings)))
-
-        # pull data
-        url = "https://www.boliga.dk/bolig/" + str(boliga_id)
-        soup_row, soup_icons = _get_boliga_soup(browser, url)
-
-        # process to raw dataframe
-        idd = {'boliga_id': boliga_id, 'zipcode': zipcode, 'url': url}
-        row_details = _process_section_a(soup_row)
-        icon_details = _process_section_b(soup_icons)
-        d = {**idd, **row_details, **icon_details}
-        df_raw = pd.DataFrame(d, index=[0])
-
-        # cleaning and extending dataframe
-        processed_listings.append(df_raw)
-
-    if len(processed_listings) > 0:
-        return pd.concat(processed_listings)
-    return bh.get_empty_archive()
-
-
-def _get_boliga_soup(browser, url):
-
-    # get page
+def read_bolig(browser, boliga_id):
+    
+    # open page and get soup
+    url = "https://www.boliga.dk/bolig/" + str(boliga_id)
     browser.open(url)
     soup = browser.get_current_page()
-    inner_details = soup.find_all('div', attrs={'class': 'app-inner-details'})[0]
 
-    # return sections of interest
+    # results stored in dict
+    d = {'boliga_id' : boliga_id, 'url' : url}
+
+    # fetch title
+    title = soup.find_all('title')[0]
+    title = title.get_text().strip()
+    d['address'] = title.replace('Til salg:', '')
+
+    # retrieve and process section a
     section_a = soup.find_all('div', attrs={'class': 'row no-gutters'})[0]
-    section_b = inner_details.find_all('use')
-    return section_a, section_b
-
-
-def _process_section_a(soup):
-    d = {}
-    span = soup.find_all('span', attrs={'class': 'text-muted'})[0]
-    d['address'] = span.get_text().strip()
-    span = soup.find_all('span', attrs={'class': 'font-weight-bolder'})[0]
+    icon = section_a.find_all('span', attrs={'class': 'icon'})[0]
+    d['property_type'] = icon.get_text().strip()
+    span = section_a.find_all('span', attrs={'class': 'font-weight-bolder'})[0]
     d['list_price'] = span.get_text().strip()
-    span = soup.find_all('p', attrs={'class': 'ng-star-inserted'})[-1]
+    span = section_a.find_all('p', attrs={'class': 'ng-star-inserted'})[-1]
     d['created_date'] = span.get_text().strip()
-    return d
 
+    # retrieve and process section b
+    inner_details = soup.find_all('div', attrs={'class': 'app-inner-details'})[0]
+    section_b = inner_details.find_all('use')
 
-def _process_section_b(soup):
-
-    d = {}
-
-    for i in soup:
+    for i in section_b:
 
         # get all spans to read data from
         icon_name = i.get('xlink:href')
         pp = i.find_parent().find_parent()
 
-        grp1 = ['#icon-rooms', '#icon-floor']
-        grp2 = ['#icon-square', '#icon-lot-size', '#icon-construction-year',
+        grp = ['#icon-rooms', '#icon-floor', '#icon-square', '#icon-lot-size', '#icon-construction-year',
                 '#icon-energy', '#icon-taxes', '#icon-basement-size']
 
-        if icon_name in grp1:
+        if icon_name in grp:
             spans = pp.find_all('span')
             icon_value = spans[1].get_text().strip()
             d[icon_name] = icon_value
 
-        if icon_name in grp2:
-            spans = pp.find_all('span')
-            icon_value = spans[1].get_text().strip()
-            d[icon_name] = icon_value
+    df = pd.DataFrame(d, index=[0])
+    
+    # rename some columns
+    rename_dict = {
+        '#icon-square': 'living_area',
+        '#icon-lot-size': 'lot_area',
+        '#icon-rooms': 'rooms',
+        '#icon-floor': 'floors',
+        '#icon-construction-year': 'construction_date',
+        '#icon-energy': 'energy_rating',
+        '#icon-taxes': 'taxes_pr_month',
+        '#icon-basement-size': 'bsmnt_area'
+    }
+    df = df.rename(columns=rename_dict)
 
-    return d
+    # trim and clean
+    trim = re.compile(r'[^\d]+')
+    df['address'] = df['address'].apply(lambda x: x.strip())
+    df['list_price'] = df['list_price'].apply(lambda x: trim.sub('', x))
+    df['living_area'] = df['living_area'].apply(lambda x: trim.sub('', x))
+    df['lot_area'] = df['lot_area'].apply(lambda x: trim.sub('', x))
+    df['floors'] = df['floors'].apply(lambda x: trim.sub('', x))
+    df['taxes_pr_month'] = df['taxes_pr_month'].apply(lambda x: trim.sub('', x))
+    df['bsmnt_area'] = df['bsmnt_area'].apply(lambda x: trim.sub('', x))
+    df['created_date'] = df['created_date'].apply(lambda x: date_clean(x))
 
+    # return ordered dataframe
+    ordered_columns = [
+            'boliga_id', 'property_type', 'address', 'list_price', 'living_area', 'lot_area', 'rooms', 
+            'floors', 'construction_date', 'energy_rating', 'taxes_pr_month', 
+            'bsmnt_area', 'created_date', 'url'
+    ]
+    return df[ordered_columns]
