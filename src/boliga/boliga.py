@@ -1,15 +1,17 @@
 import mechanicalsoup as ms
 import pandas as pd
 import numpy as np
-from dfutils.geo import get_dk_lat_lng, get_nearest_station
-from dfutils.dates import date_clean
+from utils import date_clean
 import re
 
 
-def get_listings(browser, zipcode):
+def get_listings(browser, zipcode, property_types = [1,2]):
+
+    property_type_filter = "&propertyType=" + ','.join(str(x) for x in property_types)
 
     # identify pages to process
-    browser.open("https://www.boliga.dk/resultat?zipCodes=" + str(zipcode) + "&propertyType=1,2")
+    url = "https://www.boliga.dk/resultat?zipCodes=" + str(zipcode) + property_type_filter
+    browser.open(url)
     soup = browser.get_current_page()
 
     try:
@@ -26,7 +28,7 @@ def get_listings(browser, zipcode):
     for p in range(1, pages + 1):
 
         # open page
-        url = "https://www.boliga.dk/resultat?zipCodes=" + str(zipcode) + "&page=" + str(p) + "&propertyType=1,2"
+        url = "https://www.boliga.dk/resultat?zipCodes=" + str(zipcode) + "&page=" + str(p) + property_type_filter
         browser.open(url)
 
         # retrieve listings
@@ -57,7 +59,7 @@ def read_bolig(browser : ms.StatefulBrowser(), boliga_id):
     # for sale or sold?
     address = title.split(':')
     d['address'] = address[1]
-    d['for_sale'] = 1 if address == 'Tidligere salg på' else 0    
+    d['for_sale'] = 0 if address[1] == 'Tidligere salg på' else 1
 
     # retrieve and process section a
     section_a = soup.find_all('div', attrs={'class': 'row no-gutters'})[0]
@@ -86,9 +88,11 @@ def read_bolig(browser : ms.StatefulBrowser(), boliga_id):
             icon_value = spans[1].get_text().strip()
             d[icon_name] = icon_value
 
+    # add sold information
+    d['final_price'] = None
+
+    # finalize as dataframe
     df = pd.DataFrame(d, index=[0])
-    
-    # rename some columns
     rename_dict = {
         '#icon-square': 'living_area',
         '#icon-lot-size': 'lot_area',
@@ -116,7 +120,7 @@ def read_bolig(browser : ms.StatefulBrowser(), boliga_id):
     ordered_columns = [
             'boliga_id', 'property_type', 'address', 'list_price', 'living_area', 'lot_area', 'rooms', 
             'floors', 'construction_date', 'energy_rating', 'taxes_pr_month', 
-            'bsmnt_area', 'created_date', 'url', 'for_sale'
+            'bsmnt_area', 'created_date', 'url', 'for_sale', 'final_price'
     ]
     return df[ordered_columns]
 
@@ -134,11 +138,12 @@ def get_bolig_from_list(id_list):
     return pd.concat(frames)
 
 
-def get_listings_from_list(zipcodes):
+def get_listings_from_list(zipcodes = []):
 
     browser =  ms.StatefulBrowser()
     all_listings = []
-
+    
+    print('.. processing %s zipcodes' % len(zipcodes))
     for index, zipcode in enumerate(zipcodes):
 
         print(".. finding listings in %s (%s of %s)" % (zipcode, index+1, len(zipcodes)))
@@ -146,6 +151,5 @@ def get_listings_from_list(zipcodes):
 
     # remove duplicates
     all_listings = list(dict.fromkeys(all_listings))
-    print(".. found %s total listings" % (len(all_listings)))
 
     return all_listings
