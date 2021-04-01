@@ -1,9 +1,9 @@
 import mechanicalsoup as ms
 import pandas as pd
 import numpy as np
-from utils import date_clean
+from utils import date_clean, strip_digits
+from boliga.dataclass import Housing, HousingList
 import re
-
 
 def get_listings(browser, zipcode, property_types = [1,2]):
 
@@ -18,7 +18,6 @@ def get_listings(browser, zipcode, property_types = [1,2]):
         pg_stats = soup.find_all('div', attrs={'class': re.compile('paging-stats')})
         pg_stats = pg_stats[-1].get_text()
         listings_count = re.search(r'(\d+)(?!.*\d)', pg_stats).group(0)
-        listings_num = int(listings_count)
         pages = int(np.ceil(int(listings_count) / 50))
     except IndexError:
         pages = 0
@@ -42,114 +41,100 @@ def get_listings(browser, zipcode, property_types = [1,2]):
     return listings
 
 
-def read_bolig(browser : ms.StatefulBrowser(), boliga_id):
+def read_bolig(boliga_id, browser = ms.StatefulBrowser()) -> Housing:
     
-    # open page and get soup
+    housing = Housing()
+    
+    # open page and start reading soup
     url = "https://www.boliga.dk/bolig/" + str(boliga_id)
     browser.open(url)
     soup = browser.get_current_page()
 
     # results stored in dict
-    d = {'boliga_id' : boliga_id, 'url' : url}
+    housing.boliga_id = boliga_id
+    housing.url = url
 
-    # fetch title
+    # fetch title + for sale status
     title = soup.find_all('title')[0]
     title = title.get_text().strip()
-
-    # for sale or sold?
     address = title.split(':')
-    d['address'] = address[1]
-    d['for_sale'] = 0 if address[1] == 'Tidligere salg på' else 1
+    housing.address = address[1].strip()
+    housing.for_sale = 0 if address[1] == 'Tidligere salg på' else 1
 
     # retrieve and process section a
-    section_a = soup.find_all('div', attrs={'class': 'row no-gutters'})[0]
-    icon = section_a.find_all('span', attrs={'class': 'icon'})[0]
-    d['property_type'] = icon.get_text().strip()
-    span = section_a.find_all('span', attrs={'class': 'font-weight-bolder'})[0]
-    d['list_price'] = span.get_text().strip()
-    span = section_a.find_all('p', attrs={'class': 'ng-star-inserted'})[-1]
-    d['created_date'] = span.get_text().strip()
+    def section_a(soup):
+        d = {}
+        section_a = soup.find_all('div', attrs={'class': 'row no-gutters'})[0]
+
+        icon = section_a.find_all('span', attrs={'class': 'icon'})[0]
+        d['property_type'] = icon.get_text().strip()
+
+        span = section_a.find_all('span', attrs={'class': 'font-weight-bolder'})[0]
+        stripped = span.get_text().strip()
+        d['list_price'] = strip_digits(stripped)
+        
+        span = section_a.find_all('p', attrs={'class': 'ng-star-inserted'})[-1]
+        stripped = span.get_text().strip()
+        d['created_date'] = date_clean(stripped)
+
+        return d
 
     # retrieve and process section b
-    inner_details = soup.find_all('div', attrs={'class': 'app-inner-details'})[0]
-    section_b = inner_details.find_all('use')
+    def section_b(soup):
 
-    for i in section_b:
+        inner_details = soup.find_all('div', attrs={'class': 'app-inner-details'})[0]
+        section_b = inner_details.find_all('use')
+        d = {}
+        fields = ['rooms','floor','square','lot-size', 'construction-year', 'energy', 'taxes', 'basement-size']
+        
+        for i in section_b:
+            field = i.get('xlink:href').replace('#icon-', '')
+            if field in fields:
+                pp = i.find_parent().find_parent()
+                spans = pp.find_all('span')
+                stripped = spans[1].get_text().strip()
+                d[field] = strip_digits(stripped)
 
-        # get all spans to read data from
-        icon_name = i.get('xlink:href')
-        pp = i.find_parent().find_parent()
+        return d
 
-        grp = ['#icon-rooms', '#icon-floor', '#icon-square', '#icon-lot-size', '#icon-construction-year',
-                '#icon-energy', '#icon-taxes', '#icon-basement-size']
+    d = section_a(soup)
+    housing.property_type = d['property_type']
+    housing.list_price = d['list_price']
+    housing.created_date = d['created_date']
 
-        if icon_name in grp:
-            spans = pp.find_all('span')
-            icon_value = spans[1].get_text().strip()
-            d[icon_name] = icon_value
+    d = section_b(soup)
+    housing.rooms = d['rooms']
+    housing.floors = d['floor']
+    housing.living_area = d['square']
+    housing.lot_area = d['lot-size']
+    housing.construction_year = d['construction-year']
+    housing.energy_rating = d['energy']
+    housing.taxes_pr_month = d['taxes']
+    housing.bsmnt_area = d['basement-size']
 
-    # add sold information
-    d['final_price'] = None
+    housing.final_price = None
 
-    # finalize as dataframe
-    df = pd.DataFrame(d, index=[0])
-    rename_dict = {
-        '#icon-square': 'living_area',
-        '#icon-lot-size': 'lot_area',
-        '#icon-rooms': 'rooms',
-        '#icon-floor': 'floors',
-        '#icon-construction-year': 'construction_date',
-        '#icon-energy': 'energy_rating',
-        '#icon-taxes': 'taxes_pr_month',
-        '#icon-basement-size': 'bsmnt_area'
-    }
-    df = df.rename(columns=rename_dict)
-
-    # trim and clean
-    trim = re.compile(r'[^\d]+')
-    df['address'] = df['address'].apply(lambda x: x.strip())
-    df['list_price'] = df['list_price'].apply(lambda x: trim.sub('', x))
-    df['living_area'] = df['living_area'].apply(lambda x: trim.sub('', x))
-    df['lot_area'] = df['lot_area'].apply(lambda x: trim.sub('', x))
-    df['floors'] = df['floors'].apply(lambda x: trim.sub('', x))
-    df['taxes_pr_month'] = df['taxes_pr_month'].apply(lambda x: trim.sub('', x))
-    df['bsmnt_area'] = df['bsmnt_area'].apply(lambda x: trim.sub('', x))
-    df['created_date'] = df['created_date'].apply(lambda x: date_clean(x))
-
-    # return ordered dataframe
-    ordered_columns = [
-            'boliga_id', 'property_type', 'address', 'list_price', 'living_area', 'lot_area', 'rooms', 
-            'floors', 'construction_date', 'energy_rating', 'taxes_pr_month', 
-            'bsmnt_area', 'created_date', 'url', 'for_sale', 'final_price'
-    ]
-    return df[ordered_columns]
+    return housing
 
 
-def get_bolig_from_list(id_list):
+def get_bolig_from_list(id_list, browser = ms.StatefulBrowser()) -> HousingList:
 
-    browser =  ms.StatefulBrowser()
-    frames = []
+    housing_list = HousingList()
 
     for index, boliga_id in enumerate(id_list):
         print(".. processing id %s (%s of %s)" % (boliga_id, index+1, len(id_list)))
-        frame = read_bolig(browser, boliga_id)
-        frames.append(frame)
+        housing = read_bolig(boliga_id, browser)
+        housing_list.append(housing)
     
-    return pd.concat(frames)
+    return housing_list
 
 
-def get_listings_from_list(zipcodes = []):
+def get_listings_from_list(zipcodes = [], browser =  ms.StatefulBrowser()):
 
-    browser =  ms.StatefulBrowser()
-    all_listings = []
-    
     print('.. processing %s zipcodes' % len(zipcodes))
+    all_listings = []
     for index, zipcode in enumerate(zipcodes):
-
         print(".. finding listings in %s (%s of %s)" % (zipcode, index+1, len(zipcodes)))
         all_listings = all_listings + get_listings(browser, zipcode)
 
-    # remove duplicates
-    all_listings = list(dict.fromkeys(all_listings))
-
-    return all_listings
+    return list(dict.fromkeys(all_listings))

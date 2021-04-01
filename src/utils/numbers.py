@@ -1,4 +1,5 @@
 import numpy as np
+import re
 
 def compare_number_sets(list_a, list_b):
 
@@ -19,3 +20,7 @@ def compare_number_sets(list_a, list_b):
     b_set_only = setb.difference(seta)
 
     return a_set_only, set_intersection, b_set_only
+
+def strip_digits(txt):
+    trim = re.compile(r'[^\d]+')
+    return trim.sub('', txt)

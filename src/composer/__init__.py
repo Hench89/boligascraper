@@ -1,4 +1,3 @@
-from boliga import get_listings_from_list, get_bolig_from_list
 from composer.compose import wrap_compose, compose
 import locale
 

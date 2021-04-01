@@ -36,7 +36,7 @@ def compose(zipcodes, df_archive, df_stations):
     current_listings = get_listings_from_list(zipcodes)
     print(".. found %s total listings" % (len(current_listings)))
 
-    # when there is not archive
+    # when there is no archive
     if df_archive is None:
         print('.. new items to process: %s' % (len(current_listings)))
         print("step %s: updating archive" % 3)
@@ -70,19 +70,20 @@ def compose(zipcodes, df_archive, df_stations):
 def _run_updates(new_items, df_stations = None, df_archive = None):
 
     # fetch new data
-    df_processed = get_bolig_from_list(new_items)
+    housing_list = get_bolig_from_list(new_items)
 
     # enrich with geo related columns
     print(".. adding geo related information to listings")
-    df_processed['latlng'] = df_processed.apply(lambda x: get_dk_lat_lng(x.address), axis=1)
-    df_processed['gmaps'] = df_processed['latlng'].apply(lambda x: 'https://maps.google.com/?q=' + str(x))
-    df_processed['station_dist_km'] = df_processed.apply(lambda x: get_nearest_station(df_stations, x.latlng), axis=1)
+    for housing in housing_list.list:
+        housing.latlng = get_dk_lat_lng(housing.address)
+        housing.gmaps = None if housing.latlng =='' else 'https://maps.google.com/?q=' + housing.latlng
+        housing.station_dist_km = get_nearest_station(df_stations, housing.latlng)
 
     # merge with archive
     if df_archive is None:
-        df = df_processed
+        df = housing_list.to_pandas()
     else:
-        df = pd.concat([df_archive, df_processed]).reset_index(drop=True)
+        df = pd.concat([df_archive, housing_list.to_pandas()]).reset_index(drop=True)
 
     # remove duplicates
     df = df.groupby(['boliga_id']).head(1)
