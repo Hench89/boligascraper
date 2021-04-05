@@ -1,3 +1,4 @@
+from composer.compose import wrap_compose, compose
 import locale
 
 try:
