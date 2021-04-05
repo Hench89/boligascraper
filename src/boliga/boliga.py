@@ -1,9 +1,8 @@
 import mechanicalsoup as ms
-import pandas as pd
 import numpy as np
-from utils import date_clean, strip_digits
-from boliga.dataclass import Housing, HousingList
+from utils import date_clean, strip_digits, get_geo_details
 import re
+
 
 def get_listings(browser, zipcode, property_types = [1,2]):
 
@@ -41,9 +40,9 @@ def get_listings(browser, zipcode, property_types = [1,2]):
     return listings
 
 
-def read_bolig(boliga_id, browser = ms.StatefulBrowser()) -> Housing:
+def read_boliga(boliga_id, browser = ms.StatefulBrowser()):
     
-    housing = Housing()
+    dict = {}
     
     # open page and start reading soup
     url = "https://www.boliga.dk/bolig/" + str(boliga_id)
@@ -51,15 +50,18 @@ def read_bolig(boliga_id, browser = ms.StatefulBrowser()) -> Housing:
     soup = browser.get_current_page()
 
     # results stored in dict
-    housing.boliga_id = boliga_id
-    housing.url = url
+    dict['boliga_id'] = boliga_id
+    dict['url'] = url
 
     # fetch title + for sale status
-    title = soup.find_all('title')[0]
-    title = title.get_text().strip()
-    address = title.split(':')
-    housing.address = address[1].strip()
-    housing.for_sale = 0 if address[1] == 'Tidligere salg på' else 1
+    def title(soup):
+        d = {}
+        title = soup.find_all('title')[0]
+        title = title.get_text().strip()
+        address = title.split(':')
+        d['address'] = address[1].strip()
+        d['for_sale'] = 0 if address[0] == 'Tidligere salg på' else 1
+        return d
 
     # retrieve and process section a
     def section_a(soup):
@@ -97,33 +99,54 @@ def read_bolig(boliga_id, browser = ms.StatefulBrowser()) -> Housing:
 
         return d
 
-    d = section_a(soup)
-    housing.property_type = d['property_type']
-    housing.list_price = d['list_price']
-    housing.created_date = d['created_date']
+    def max_sold_price(soup):
+        try:
+            history = soup.find_all('app-real-estate-property-info-history')[0]
+            price = history.find_all('td', attrs={'class': 'text-right price-col'})
+            txt = []
+            for p in price:
+                spans = p.find_all('span')
+                for s in spans:
+                    txt.append(s.get_text().strip())
+            stripped = [strip_digits(s) for s in txt]
+            stripped_int = [s for s in stripped if isinstance(s, int)]
+            return str(max(stripped_int))
+        except Exception:
+            return ''
+    
+    # merge to one dict
+    dict.update(title(soup))
+    dict.update(section_a(soup))
+    dict.update(section_b(soup))
+    dict['final_price'] = max_sold_price(soup) if dict['for_sale'] == 0 else ''
+    
+    # rename dict to fit class names
+    rename_dict = {
+        'floor': 'floors', 
+        'square': 'living_area', 
+        'lot-size' : 'lot_area',
+        'energy' : 'energy_rating',
+        'taxes' : 'taxes_per_month',
+        'basement-size' : 'bsmt_area'
+    }
+    for k, v in rename_dict.items():
+        dict[v] = dict.pop(k)
 
-    d = section_b(soup)
-    housing.rooms = d['rooms']
-    housing.floors = d['floor']
-    housing.living_area = d['square']
-    housing.lot_area = d['lot-size']
-    housing.construction_year = d['construction-year']
-    housing.energy_rating = d['energy']
-    housing.taxes_pr_month = d['taxes']
-    housing.bsmnt_area = d['basement-size']
-
-    housing.final_price = None
-
-    return housing
+    return dict
 
 
-def get_bolig_from_list(id_list, browser = ms.StatefulBrowser()) -> HousingList:
+def get_bolig_from_list(id_list, stations, browser = ms.StatefulBrowser()):
 
-    housing_list = HousingList()
-
+    housing_list = []
     for index, boliga_id in enumerate(id_list):
         print(".. processing id %s (%s of %s)" % (boliga_id, index+1, len(id_list)))
-        housing = read_bolig(boliga_id, browser)
+
+        # fetch data from boliga
+        housing = read_boliga(boliga_id, browser=browser)
+
+        # add geo details
+        geo = get_geo_details(housing['address'], stations)
+        housing.update(geo)
         housing_list.append(housing)
     
     return housing_list
@@ -131,7 +154,7 @@ def get_bolig_from_list(id_list, browser = ms.StatefulBrowser()) -> HousingList:
 
 def get_listings_from_list(zipcodes = [], browser =  ms.StatefulBrowser()):
 
-    print('.. processing %s zipcodes' % len(zipcodes))
+    print('Processing %s zipcodes' % len(zipcodes))
     all_listings = []
     for index, zipcode in enumerate(zipcodes):
         print(".. finding listings in %s (%s of %s)" % (zipcode, index+1, len(zipcodes)))

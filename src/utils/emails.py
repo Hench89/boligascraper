@@ -8,7 +8,7 @@ def send_ssl_mail(send_from, password, subject, body, server, port, send_to):
     msg = MIMEMultipart('related')
     msg['Subject'] = subject
     msg['From'] = send_from
-    msg['To'] = ", ".join(send_to) if ';' in send_to else send_to
+    msg['To'] = ", ".join(send_to) if type(send_to) == list else send_to
 
     part2 = MIMEText(body, 'html')
     msg.attach(part2)

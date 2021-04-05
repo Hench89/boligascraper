@@ -1,5 +1,4 @@
-from reporting.emails import send_ssl_mail
-from dfutils.html import get_html_df
+from utils import get_html_df, send_ssl_mail
 import os
 import sys
 import traceback
@@ -27,12 +26,12 @@ try:
 
     # prepare archive for email
     output_columns = ['address', 'property_type', 'list_price', 'living_area', 'rooms', 'url', 'gmaps', 'station_dist_km', 'market_days']
-    df = df[output_columns]
-    df = df[df['market_days'] <= 4].reset_index()
-    df['list_price'] = df.apply(lambda x: '{:,}'.format(x.list_price).replace(',', '.'), axis=1)
-
-    # get html table
     link_columns = ['url', 'gmaps']
+    
+    # get table for villa
+    df['list_price'] = df.apply(lambda x: '{:,}'.format(x.list_price).replace(',', '.'), axis=1)
+    df = df[output_columns]
+    df = df[df['market_days'] <= 7].reset_index()
     email_body = get_html_df(df, link_columns=link_columns)
 
 except:

@@ -1,97 +1,68 @@
 import pandas as pd
-import csv
-from pathlib import Path
+import numpy as np
+from os import path
 from boliga import get_listings_from_list, get_bolig_from_list
-from utils import get_dk_lat_lng, get_nearest_station, days_on_market, compare_number_sets
+from utils import days_on_market, compare_number_sets
 
-def wrap_compose(zipcodes_path, stations_path : None, archive_path : None):
 
-    # load zipcodes
-    df_zip = pd.read_csv(zipcodes_path)
-    zipcodes = df_zip[df_zip.columns[0]]
-
-    # load archive and stations
-    def try_load_file(filepath):
-        if Path(filepath).exists():
-            return pd.read_csv(filepath, quoting=csv.QUOTE_NONNUMERIC)
-        return None
+def wrap_compose(zipcodes_path, stations_path, archive_path):
     
-    df_archive = try_load_file(archive_path)
-    df_stations = try_load_file(stations_path)
+    if not path.exists(zipcodes_path):
+        return print('no zipcodes to use')
+    zipcodes = pd.read_csv(zipcodes_path, usecols = [0]).iloc[:,0]
 
-    return compose(zipcodes, df_archive, df_stations)
-
-
-def compose(zipcodes, df_archive, df_stations):
-
-    # archive summary
-    print("step %s: reading archive" % 1)
-    if df_archive is None:
-        print('.. starting a new archive')
-    else:
-        print('.. read %s listings from archive:' % len(df_archive))
-
-    # read new items
-    print("step %s: reading current listings" % 2)
-    current_listings = get_listings_from_list(zipcodes)
-    print(".. found %s total listings" % (len(current_listings)))
-
-    # when there is no archive
-    if df_archive is None:
-        print('.. new items to process: %s' % (len(current_listings)))
-        print("step %s: updating archive" % 3)
-        return _run_updates(current_listings, df_stations = df_stations)
-
-    else:
-        # identify how much to process
-        print("step %s: identifying differences" % 3)
-        archive_listings = df_archive['boliga_id'] if df_archive is not None else None
-        a_only, intersection, b_only = compare_number_sets(current_listings, archive_listings)
-
-        print('.. new items to process: %s' % (len(a_only)))
-        print('.. unchanged items: %s' % (len(intersection)))
-        print('.. items to remove from archive: %s' % len(b_only))
-
-        # update
-        print("step %s: updating archive" % 4)
-        new_items = list(a_only)
-        df_archive = df_archive[~df_archive['boliga_id'].isin(set(b_only))].reset_index(drop=True)
-
-        if len(new_items) == 0:
-            return df_archive
-        return _run_updates(
-            new_items = new_items,
-            df_archive = df_archive,
-            df_stations = df_stations
-        )
+    archive = []
+    if path.exists(archive_path):
+        archive = pd.read_csv(archive_path).to_dict(orient='records')
+    
+    stations = []
+    if path.exists(stations_path):
+        stations = pd.read_csv(stations_path).to_dict(orient='records')
+    
+    return compose(zipcodes, archive, stations)
 
 
+def compose(zipcodes, archive, stations):
 
-def _run_updates(new_items, df_stations = None, df_archive = None):
+    # get ids of new listings
+    new_ids = get_listings_from_list(zipcodes)
+    new_ids.append(1753899)
+    print(".. total listings: %s" % (len(new_ids)))
 
-    # fetch new data
-    housing_list = get_bolig_from_list(new_items)
+    # compare against archive
+    print("Comparing listings against archive")
+    archive_ids = [d['boliga_id'] for d in archive]
+    new_ids, unchanged_ids, archive_ids = compare_number_sets(new_ids, archive_ids)
+    print('.. new items to process: %s' % len(new_ids))
+    print('.. unchanged items: %s' % (len(unchanged_ids)))
+    print('.. items to remove from archive: %s' % len(archive_ids))
+    
+    # items to re-process, because sold
+    sold_ids = []
+    if len(archive) > 0 and len(archive_ids) > 0:
+        for i, item in enumerate(archive):
+            if item['boliga_id'] in archive_ids:
+                sold_ids.append(item['boliga_id'])
+                del archive[i]
+        print('.. items to reprocess: %s' % len(sold_ids))
+    
+    reprocess_ids = list(set(new_ids) - set(sold_ids))
+    
+    # process new items
+    if len(reprocess_ids) > 0:
+        print('Processing new items')
+        bolig_list = get_bolig_from_list(reprocess_ids, stations)
+        for b in bolig_list:
+            archive.append(b)
 
-    # enrich with geo related columns
-    print(".. adding geo related information to listings")
-    for housing in housing_list.list:
-        housing.latlng = get_dk_lat_lng(housing.address)
-        housing.gmaps = None if housing.latlng =='' else 'https://maps.google.com/?q=' + housing.latlng
-        housing.station_dist_km = get_nearest_station(df_stations, housing.latlng)
+    # update market days
+    if len(archive) > 0:
+        for item in archive:
+            item['market_days'] = days_on_market(item['created_date'])
 
-    # merge with archive
-    if df_archive is None:
-        df = housing_list.to_pandas()
-    else:
-        df = pd.concat([df_archive, housing_list.to_pandas()]).reset_index(drop=True)
+    if len(archive) == 0:
+        return None
 
-    # remove duplicates
-    df = df.groupby(['boliga_id']).head(1)
-
-    # set market_days again
-    df['market_days'] = df.apply(lambda x: days_on_market(x.created_date), axis=1)
-
-    # reorder merged list
-    df = df.sort_values(by=['market_days', 'list_price']).reset_index(drop=True)
-
+    # finalize as dataframe
+    df = pd.DataFrame(archive).sort_values(by=['market_days'])
     return df
