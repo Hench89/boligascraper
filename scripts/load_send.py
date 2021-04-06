@@ -2,8 +2,7 @@ from utils import get_html_df, send_ssl_mail
 import os
 import sys
 import traceback
-import pandas as pd
-import csv
+from etl import load
 
 # retrieve environment variables
 try:
@@ -20,9 +19,8 @@ except:
 try:
 
     # read archive
-    archive_file_path = "./output/boliga.csv"
-    dtype_schema = {'list_price': int, 'living_area': int, 'rooms': int, 'market_days' : int}
-    df = pd.read_csv(archive_file_path, quoting=csv.QUOTE_NONNUMERIC, dtype=dtype_schema)
+    archive_path = "./archive/"
+    df = load(archive_path)
 
     # prepare archive for email
     output_columns = ['address', 'property_type', 'list_price', 'living_area', 'rooms', 'url', 'gmaps', 'station_dist_km', 'market_days']

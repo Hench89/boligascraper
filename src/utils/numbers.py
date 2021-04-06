@@ -24,4 +24,3 @@ def strip_digits(txt):
         return int(stripped)
     except Exception:
         return None
-

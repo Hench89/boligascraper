@@ -5,17 +5,18 @@ description = ""
 authors = ["Henrik Christoffersen"]
 
 packages = [
-    { include = "boliga", from = "src" },
-    { include = "composer", from = "src" },
+    { include = "etl", from = "src" },
     { include = "utils", from = "src" }
 ]
 
 [tool.poetry.dependencies]
 python = "^3.7.1"
-MechanicalSoup = "^1.0.0"
-pandas = "^1.2.2"
-geopy = "^1.2"
+pandas = "^1.2.3"
+geopy = "^2.1.0"
 pretty-html-table = "^0.9.dev0"
+requests = "^2.25.1"
+bs4 = "^0.0.1"
+minify-html = "^0.4.5"
 
 [tool.poetry.dev-dependencies]
 

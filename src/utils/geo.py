@@ -1,9 +1,6 @@
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 from geopy.exc import GeocoderServiceError
-from math import asin, cos, radians, sin, sqrt
-
-from numpy import add
 
 def get_dk_geo(address):
 

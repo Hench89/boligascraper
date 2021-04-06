@@ -1,10 +1,7 @@
-install:
-	poetry install --no-dev
-
-scrape:
-	poetry run python ./scripts/run_scraping.py
+data:
+	poetry run python ./scripts/run_extract_transform.py
 
 reporting:
-	poetry run python ./scripts/send_email.py
+	poetry run python ./scripts/load_send.py
 
-run: scrape reporting
+run: data reporting
