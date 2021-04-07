@@ -6,47 +6,56 @@ from utils import get_soup_from_url, get_compressed_html_from_url
 
 def extract_new(archive_path, zipcodes = [], property_types = [1,2]):
 
+    print('Running data extraction')
+
     if len(zipcodes)==0 or len(property_types)==0:
-        return print('zipcodes and property types not configured correctly!')
+        return print('.. zipcodes and property types not configured correctly!')
 
     # setup raw dir if not exists
     raw_path = archive_path + '/raw/'
     if not path.exists(raw_path):
         makedirs(raw_path)
 
-    # get page stats
+    # get first page
     property_type_filter = "&propertyType=" + ','.join(str(x) for x in property_types)
     zipcode_filter = "&zipCodes=" + ','.join(str(x) for x in zipcodes)
     url = "https://www.boliga.dk/resultat?zipCodes=" + zipcode_filter + property_type_filter
-    print('getting soup from %s' % url)
+    print('.. getting soup from %s' % url)
     soup = get_soup_from_url(url)
-    pages_to_process = get_page_stats(soup)
-    print('need to process %s pages' % pages_to_process)
+    pages_soup = [soup]
 
-    # iterate pages to get ids
+    # detect pages to process
+    pages_to_process = get_page_stats(soup)
+    print('.. need to process %s more pages' % (pages_to_process -1))
+
+    # get some more soup
+    if pages_to_process > 1:
+        for page_number in range(2, pages_to_process+1):
+            page_url = url + '&page=' + str(page_number)
+            print('.. getting soup from %s' % page_url)
+            soup = get_soup_from_url(page_url)
+            pages_soup.append(soup)
+
+    # fetch ids
     all_ids = []
-    for page_number in range(1, pages_to_process+1):
-        page_url = url + '&page=' + str(page_number)
-        print('getting soup from %s' % page_url)
-        soup = get_soup_from_url(page_url)
+    for soup in pages_soup:
         page_ids = get_bolig_ids(soup)
         all_ids.extend(page_ids)
-
     all_ids = list(set(all_ids)) # distinct
     
     # check if page already fetched in raw
-    ids_to_get = [id for id in all_ids if not path.exists(id_path(raw_path, id))]
+    ids_to_get = [id for id in all_ids if not path.exists(id_path(raw_path, id, 'zlib'))]
 
     # print summary
     raw_files = len([name for name in listdir(raw_path) if path.isfile(path.join(raw_path, name))])
-    print('total ids in archive: %s' % raw_files)
-    print('for sale ids: %s' % len(all_ids))
-    print('to fetch: %s' % len(ids_to_get))
+    print('.. total ids in archive: %s' % raw_files)
+    print('.. for sale ids: %s' % len(all_ids))
+    print('.. to fetch: %s' % len(ids_to_get))
 
     # download and store in raw folder
     for i, id in enumerate(ids_to_get):
-        filepath = id_path(raw_path, id)
-        print('fetching, minifying and compressing to file: %s (%s of %s)' % (filepath, i+1, len(ids_to_get)))
+        filepath = id_path(raw_path, id, 'zlib')
+        print('.. fetching, minifying and compressing to file: %s (%s of %s)' % (filepath, i+1, len(ids_to_get)))
         url = 'https://www.boliga.dk/bolig/' + str(id)
         bytes = get_compressed_html_from_url(url)
         with open(filepath, 'wb') as f:
@@ -73,5 +82,5 @@ def get_bolig_ids(soup):
     return [read_id(tag) for tag in a_tags]
 
 
-def id_path(path, id):
-    return path + str(id) + '.gzip'
+def id_path(path, id, extension):
+    return path + str(id) + '.' + extension
