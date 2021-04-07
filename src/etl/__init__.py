@@ -1,6 +1,6 @@
 from etl.extract import extract_new
 from etl.transform import transform_new
-from etl.load import load
+from etl.load import get_dataframe, get_html_dataframe
 
 import locale
 

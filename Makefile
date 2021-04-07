@@ -4,4 +4,7 @@ data:
 reporting:
 	poetry run python ./scripts/load_send.py
 
+dataframe:
+	poetry run python ./scripts/print_data.py
+
 run: data reporting

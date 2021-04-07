@@ -1,8 +1,8 @@
-from utils import get_html_df, send_ssl_mail
+from utils import send_ssl_mail
+from etl import get_html_dataframe
 import os
 import sys
 import traceback
-from etl import load
 
 # retrieve environment variables
 try:
@@ -11,7 +11,7 @@ try:
     env_send_to = env_send_to.split(';') if ';' in env_send_to else env_send_to
     env_password = os.getenv('MAILPASSWORD')
 except:
-    print('Unable to retrieve environment variables')
+    print('Unable to retrieve environment variables!')
     traceback.print_exc()
     sys.exit()
 
@@ -20,20 +20,10 @@ try:
 
     # read archive
     archive_path = "./archive/"
-    df = load(archive_path)
-
-    # prepare archive for email
-    output_columns = ['address', 'property_type', 'list_price', 'living_area', 'rooms', 'url', 'gmaps', 'station_dist_km', 'market_days']
-    link_columns = ['url', 'gmaps']
-    
-    # get table for villa
-    df['list_price'] = df.apply(lambda x: '{:,}'.format(x.list_price).replace(',', '.'), axis=1)
-    df = df[output_columns]
-    df = df[df['market_days'] <= 7].reset_index()
-    email_body = get_html_df(df, link_columns=link_columns)
+    df = get_html_dataframe(archive_path)
 
 except:
-    print('Unable to read and prepare table from archive')
+    print('Unable to read and prepare table from archive!')
     traceback.print_exc()
     sys.exit()
 
