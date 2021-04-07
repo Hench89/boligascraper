@@ -1,8 +1,8 @@
 from os import path, listdir
-from utils import days_on_market, read_json
+from utils import days_on_market, read_json, get_html_df
 import pandas as pd
 
-def load(archive_path):
+def get_dataframe(archive_path):
 
     # read everything into dataframe
     clean_path = archive_path + '/clean/'
@@ -12,6 +12,20 @@ def load(archive_path):
 
     # enrich dataframe
     df['market_days'] = df.apply(lambda x: days_on_market(x['created_date']),axis=1)
-    df = df.sort_values(by=['market_days'])
+    df = df.sort_values(by=['market_days']).reset_index(drop=True)
 
     return df
+
+def get_html_dataframe(archive_path):
+
+    df = load(archive_path)
+
+    # prepare archive for email
+    output_columns = ['address', 'property_type', 'list_price', 'living_area', 'rooms', 'url', 'gmaps', 'station_dist_km', 'market_days']
+    link_columns = ['url', 'gmaps']
+    
+    # get table for villa
+    df['list_price'] = df.apply(lambda x: '{:,}'.format(x.list_price).replace(',', '.'), axis=1)
+    df = df[output_columns]
+    df = df[df['market_days'] <= 7].reset_index(drop=True)
+    return get_html_df(df, link_columns=link_columns)
