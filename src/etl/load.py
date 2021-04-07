@@ -12,7 +12,7 @@ def get_dataframe(archive_path):
 
     # enrich dataframe
     df['market_days'] = df.apply(lambda x: days_on_market(x['created_date']),axis=1)
-    df['gmaps'] = df.apply(lambda x: None if latlon == '' else 'https://maps.google.com/?q=' + x.latlon),axis=1)
+    df['gmaps'] = df.apply(lambda x: None if latlon == '' else 'https://maps.google.com/?q=' + x.latlon, axis=1)
     df = df.sort_values(by=['market_days']).reset_index(drop=True)
     
     return df

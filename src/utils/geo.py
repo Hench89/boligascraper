@@ -52,10 +52,9 @@ def get_geo_details(address, stations):
     
     # get latlon from address
     d['latlon'] = get_dk_geo(address)
-
+    
+    # calculate distance to nearest s-train station
     if d['latlon'] != '':
-       
-        # calculate distance to nearest s-train station
         stations_latlng = [str(s['lat']) + ',' + str(s['lon']) for s in stations]
         distances = [km_dist(s, d['latlon']) for s in stations_latlng]
         distances = [d for d in distances if d is not '']
