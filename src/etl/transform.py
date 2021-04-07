@@ -10,6 +10,8 @@ from utils import (
 
 def transform_new(archive_path, stations):
 
+    print('Running data transformation...')
+
     # setup clean dir if not exists
     raw_path = archive_path + '/raw/'
     clean_path = archive_path + '/clean/'
@@ -23,10 +25,10 @@ def transform_new(archive_path, stations):
 
     # decompress and save again
     for i, id in enumerate(to_transform):
-        raw_file = id_path(raw_path, id, 'gzip')
+        raw_file = id_path(raw_path, id, 'zlib')
         clean_file = id_path(clean_path, id, 'json')
 
-        print('opening %s to save in %s (%s of %s)' % (raw_file, clean_file, i+1, len(to_transform)))
+        print('.. opening %s and transforming to json in %s (%s of %s)' % (raw_file, clean_file, i+1, len(to_transform)))
 
         # make results to dict
         soup = get_decompressed_soup_from_file(raw_file)
@@ -40,8 +42,8 @@ def transform_new(archive_path, stations):
         dict_to_json(dict_boliga, clean_file)
 
     
-def id_path(path, id, file_format):
-    return path + str(id) + '.' + file_format
+def id_path(path, id, extension):
+    return path + str(id) + '.' + extension
 
 def read_boliga(soup):
     
