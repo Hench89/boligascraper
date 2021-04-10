@@ -10,4 +10,4 @@ load:
 print:
 	poetry run python ./scripts/make_print.py
 
-run: data reporting
+run: raw clean
