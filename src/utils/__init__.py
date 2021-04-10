@@ -8,9 +8,10 @@ from utils.numbers import (
     strip_postal_code
 )
 from utils.files import (
-    get_soup_from_url,
-    get_compressed_html_from_url, 
-    get_decompressed_soup_from_file,
+    compress_save,
+    decompresse_load,
     dict_to_json, 
-    read_json
+    read_local_json,
+    read_json_from_url,
+    save_json_file
 )

@@ -1,10 +1,10 @@
-data:
-	poetry run python ./scripts/run_extract_transform.py
+extract:
+	poetry run python ./scripts/extract.py
 
-reporting:
-	poetry run python ./scripts/load_send.py
+load:
+	poetry run python ./scripts/load.py
 
-dataframe:
-	poetry run python ./scripts/print_data.py
+print:
+	poetry run python ./scripts/print.py
 
 run: data reporting

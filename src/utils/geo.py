@@ -7,9 +7,9 @@ def get_dk_geo(address):
 
     # fetch postalcode
     postal_code = strip_postal_code(address)
-    parts = address.split(',')
 
     # deconstruct parts
+    parts = address.split(',')
     street_parts = [p.strip() for p in parts if postal_code not in p]
     zip_parts = [p.strip() for p in parts if postal_code in p]
     city_parts = [z.replace(postal_code, '').strip() for z in zip_parts]
@@ -47,7 +47,6 @@ def get_geo_details(address, stations):
 
     d = {}
     d['latlon'] = ''
-    d['gmaps'] = ''
     d['station_dist_km'] = ''
     
     # get latlon from address

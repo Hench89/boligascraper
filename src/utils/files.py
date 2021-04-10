@@ -1,9 +1,7 @@
 import requests as r
-from bs4 import BeautifulSoup
-import minify_html
 import zlib
 import json
-
+from os import path, makedirs
 
 def dict_to_json(dict, file_path):
     output = json.dumps(dict)
@@ -11,28 +9,39 @@ def dict_to_json(dict, file_path):
         f.write(output)
 
 
-def read_json(file_path):
+def read_json_from_url(url):
+    return r.get(url).json()
+
+
+def read_local_json(file_path):
     with open(file_path) as f:
         return json.load(f)
 
 
-def get_soup_from_url(url):
-    html = r.get(url)
-    return BeautifulSoup(html.text, 'html.parser')
+def save_json_file(file_path, data):
+    with open(file_path, 'w') as outfile:
+        json.dump(data, outfile)
 
 
-def get_decompressed_soup_from_file(file_path):
+def compress_save(file_path, data):
+
+    # create dirs if missing
+    dir_name = path.dirname(file_path)
+    if not path.exists(dir_name):
+        makedirs(dir_name)
+
+    # encode and compress
+    encoded_data = bytes(data, encoding='utf-8')    
+    compressed_data = zlib.compress(encoded_data)
+
+    # save file
+    with open(file_path, "wb") as f:
+        f.write(compressed_data)
+
+
+def decompresse_load(file_path):
     with open(file_path, "rb") as f:
         bytes = f.read()
-    decompressed_html = zlib.decompress(bytes)
-    decoded_html = decompressed_html.decode('utf-8')
-    return BeautifulSoup(decoded_html, 'html.parser')
-
-
-def get_compressed_html_from_url(url):
-    soup = get_soup_from_url(url)
-    html = soup.prettify()
-    minified_html = minify_html.minify(html, minify_js=False, minify_css=False)
-    encoded_html = bytes(minified_html, encoding='utf-8')
-    compressed_html = zlib.compress(encoded_html)
-    return compressed_html
+    decompressed_data = zlib.decompress(bytes)
+    decoded_data = decompressed_data.decode('utf-8')
+    return decoded_data
