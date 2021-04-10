@@ -51,6 +51,10 @@ def compare_number_sets(list_a, list_b):
 
 
 def get_latest_file(folder_path):
+
+    if not path.exists(folder_path):
+        return None
+
     files = listdir(folder_path)
     if len(files)==0:
         return None
