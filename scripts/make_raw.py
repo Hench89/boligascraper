@@ -1,39 +1,56 @@
 import pandas as pd
-from raw import extract_sold, extract_estate
+from raw import extract_list, extract_estate
 import traceback
 import sys
 
 
-print('===== Getting Started =====')
-zipcodes_path = './static/zipcode.csv'
-archive_path = './archive'
-sold_archive_path = f'{archive_path}/raw/sold'
-estate_archive_path = f'{archive_path}/raw/estate'
-
+# load zipcodes
 try:
+    zipcodes_path = './static/zipcode.csv'
     zipcodes = pd.read_csv(zipcodes_path, usecols = [0]).iloc[:,0]
-    print(f'Loaded {len(zipcodes)} zipcode(s) and set prepared archive here: {archive_path}')
+    if len(zipcodes) == 0:
+        print('Failed to load zipcodes!')
+        sys.exit()
+    print(f'Loaded {len(zipcodes)} zipcode(s)')
 except:
     print(f'Could not load zipcodes from {zipcodes_path}')
     traceback.print_exc()
     sys.exit()
 
+# setup archive paths
+archive_path = './archive'
+paths = {
+    'for sale': {
+        'list' : f'{archive_path}/raw/forsale/list', 
+        'estate': f'{archive_path}/raw/forsale/estate'
+    },
+    'sold': {
+        'list' : f'{archive_path}/raw/sold/list', 
+        'estate': f'{archive_path}/raw/sold/estate'
+    }
+}
 
-print('===== Fetching latest sold batch =====')
-try:    
-    extract_sold(sold_archive_path, zipcodes = zipcodes)
-except:
-    print(f'Could not fetch sold batch data')
-    traceback.print_exc()
-    sys.exit()
 
+for fetch_type in paths.keys():
 
-try:
-    print('===== Fetching (new) estate data =====')
-    extract_estate(estate_archive_path, sold_archive_path=sold_archive_path, zipcodes=zipcodes)
-except:
-    print(f'Could not fetch estate data')
-    traceback.print_exc()
-    sys.exit()
+    print(f'===== {fetch_type.upper()} DATA =====')
+    list_url = paths[fetch_type]['list']
+    estate_url = paths[fetch_type]['estate']
+
+    try:
+        print('Fetching data from list..')
+        extract_list(list_url, fetch_type, zipcodes = zipcodes)
+    except:
+        print('Could not fetch batch data')
+        traceback.print_exc()
+        sys.exit()
+
+    try:
+        print('Fetching estate data..')
+        extract_estate(list_url, estate_url, fetch_type, zipcodes=zipcodes)
+    except:
+        print('Could not fetch estate data!')
+        traceback.print_exc()
+        sys.exit()
 
 print('Done!')
