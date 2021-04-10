@@ -1,10 +1,13 @@
-extract:
-	poetry run python ./scripts/extract.py
+raw:
+	poetry run python ./scripts/make_raw.py
+
+clean:
+	poetry run python ./scripts/make_clean.py
 
 load:
-	poetry run python ./scripts/load.py
+	poetry run python ./scripts/make_load.py
 
 print:
-	poetry run python ./scripts/print.py
+	poetry run python ./scripts/make_print.py
 
 run: data reporting

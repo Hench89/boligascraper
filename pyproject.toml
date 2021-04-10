@@ -5,7 +5,9 @@ description = ""
 authors = ["Henrik Christoffersen"]
 
 packages = [
-    { include = "etl", from = "src" },
+    { include = "raw", from = "src" },
+    { include = "clean", from = "src" },
+    { include = "transform", from = "src" },
     { include = "utils", from = "src" }
 ]
 

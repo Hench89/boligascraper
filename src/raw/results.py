@@ -1,0 +1,1 @@
+https://api.boliga.dk/api/v2/search/results?zipcodeFrom=3450&zipcodeTo=3450

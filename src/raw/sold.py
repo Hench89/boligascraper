@@ -1,16 +1,30 @@
-import json
-from utils import compress_save, read_json_from_url 
+from json import dumps
+from .utils import compress_save, read_json_from_url, get_latest_file, file_age_hours
 from math import ceil
+#from time import gmtime, strftime, strptime
+from datetime import datetime
+from os import path
 
 def run(archive_path, zipcodes = []):
 
-    # check inputs
     if len(zipcodes)==0:
-        return print('.. zipcodes not configured correctly!')
-
-    # fetch a batch of latest sold data
-    sub_archive = archive_path + '/raw/sold'
-    fetch_sold_data(sub_archive, zipcodes)
+        return print('No zipcodes to process!')
+    
+    # get latest batch file
+    latest_batch_file = get_latest_file(archive_path)
+    if latest_batch_file is None:
+        print('Fetching batch for the first time')
+        fetch_sold_data(archive_path, zipcodes)
+        return
+    
+    # determine age of file
+    batch_age = file_age_hours(latest_batch_file)
+    if batch_age < 20:
+        print(f'Batch file is only {batch_age} hours old. Will reuse it for 20 hours')
+        return
+    else:
+        print(f'Latest batch is {batch_age} old. Fetching new one!')
+        fetch_sold_data(archive_path, zipcodes)
 
 
 def fetch_sold_data(archive_path, zipcodes):
@@ -19,12 +33,11 @@ def fetch_sold_data(archive_path, zipcodes):
     sold_estate_list = []
     for z in zipcodes:
         sold_estate_list += get_sold_data(z)
-    sold_estates_json = json.dumps(sold_estate_list)
+    sold_estates_json = dumps(sold_estate_list)
 
     # save sold data
-    import time
-    timestr = time.strftime("%Y%m%d-%H%M%S")
-    file_path = f'{archive_path}/package_{timestr}.zlib'
+    time_str = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    file_path = f'{archive_path}/{time_str}.zlib'
     compress_save(file_path, sold_estates_json)
 
 
