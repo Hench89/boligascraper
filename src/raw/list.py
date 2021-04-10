@@ -4,7 +4,7 @@ from math import ceil
 from datetime import datetime
 
 
-def run(folder_path, fetch_type, zipcodes = []):
+def extract_list(folder_path, fetch_type, zipcodes = []):
 
     if len(zipcodes)==0:
         return print('No zipcodes to process!')

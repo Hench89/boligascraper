@@ -10,7 +10,7 @@ from os import listdir, path
 import pandas as pd
 
 
-def run(list_path, estate_path, fetch_type, zipcodes = []):
+def extract_estate(list_path, estate_path, fetch_type, zipcodes = []):
 
     if len(zipcodes)==0:
         return print('.. zipcodes not configured correctly!')
