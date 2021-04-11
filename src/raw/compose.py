@@ -6,31 +6,31 @@ import sys
 
 def compose(archive_root, zipcodes):
     try:
-        paths = get_path_dict(archive_root)
-        for fetch_type in paths.keys():
-            print(f'===== {fetch_type.upper()} =====')
+        paths = get_api_dict(archive_root)
+        for api_endpoint in paths.keys():
+            print(f'===== {api_endpoint.upper()} RAW =====')
 
             print('Fetching data from list..')
-            list_url = paths[fetch_type]['list']
-            extract_list(list_url, fetch_type, zipcodes = zipcodes)
+            list_url = paths[api_endpoint]['list']
+            extract_list(list_url, api_endpoint, zipcodes = zipcodes)
 
             print('Fetching estate data..')
-            estate_url = paths[fetch_type]['estate']
-            extract_estate(list_url, estate_url, fetch_type, zipcodes=zipcodes)
+            estate_url = paths[api_endpoint]['estate']
+            extract_estate(list_url, estate_url, api_endpoint, zipcodes=zipcodes)
     except:
         traceback.print_exc()
         sys.exit()
     print('RAW UP TO DATE!')
 
 
-def get_path_dict(root_path):
+def get_api_dict(root_path):
     dict = {
         'for sale': {
-            'list' : f'{root_path}/raw/forsale/list', 
+            'list' : f'{root_path}/raw/forsale/list',
             'estate': f'{root_path}/raw/forsale/estate'
         },
         'sold': {
-            'list' : f'{root_path}/raw/sold/list', 
+            'list' : f'{root_path}/raw/sold/list',
             'estate': f'{root_path}/raw/sold/estate'
         }
     }

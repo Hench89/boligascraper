@@ -1,8 +1,8 @@
 import json
 from .utils import (
-    compress_save, 
-    decompresse_load, 
-    compare_number_sets, 
+    compress_save,
+    decompresse_load,
+    compare_number_sets,
     read_json_from_url,
     get_latest_file
 )
@@ -10,13 +10,13 @@ from os import listdir, path
 import pandas as pd
 
 
-def extract_estate(list_path, estate_path, fetch_type, zipcodes = []):
+def extract_estate(list_path, estate_path, api_endpoint, zipcodes = []):
 
     if len(zipcodes)==0:
         return print('.. zipcodes not configured correctly!')
 
     estate_ids = estate_ids = read_estate_ids(estate_path)
-    list_ids = read_list_ids(list_path, fetch_type, zipcodes)
+    list_ids = read_list_ids(list_path, api_endpoint, zipcodes)
 
     # determine which archive ids are missing
     missing_ids, already_got_ids, only_archive_ids = compare_number_sets(list_ids, estate_ids)
@@ -25,10 +25,10 @@ def extract_estate(list_path, estate_path, fetch_type, zipcodes = []):
     print(f'found {len(only_archive_ids)} ids only in archive')
 
     # fetch missing estates to archive
-    fetch_estates(estate_path, missing_ids, fetch_type)
+    fetch_estates(estate_path, missing_ids, api_endpoint)
 
 
-def fetch_estates(estate_path, ids, fetch_type):
+def fetch_estates(estate_path, ids, api_endpoint):
 
     def get_estate_url(estate_id):
         return f'https://api.boliga.dk/api/v2/estate/{estate_id}'
@@ -37,7 +37,7 @@ def fetch_estates(estate_path, ids, fetch_type):
         if id == 0:
             continue
         url = get_estate_url(id)
-        print(f'Fetching {fetch_type} data for id {id} ({i+1} of {len(ids)})')
+        print(f'Fetching estate data on {api_endpoint} endpoint - id {id} ({i+1} of {len(ids)})')
         data = read_json_from_url(url)
         data_str = json.dumps(data)
 
@@ -55,7 +55,7 @@ def read_estate_ids(folder_path):
     return [int(f) for f in split_files]
 
 
-def read_list_ids(list_path, fetch_type, zipcodes):
+def read_list_ids(list_path, api_endpoint, zipcodes):
 
     # if no folder
     if not path.exists(list_path):
@@ -73,6 +73,6 @@ def read_list_ids(list_path, fetch_type, zipcodes):
     df = df[df['zipCode'].isin(zipcodes)]
 
     # return ids
-    id_column = 'estateId' if fetch_type == 'sold' else 'id'
+    id_column = 'estateId' if api_endpoint == 'sold' else 'id'
     estate_ids = df[id_column]
     return estate_ids

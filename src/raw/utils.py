@@ -17,7 +17,7 @@ def compress_save(file_path, data):
         makedirs(dir_name)
 
     # encode and compress
-    encoded_data = bytes(data, encoding='utf-8')    
+    encoded_data = bytes(data, encoding='utf-8')
     compressed_data = zlib.compress(encoded_data)
 
     # save file

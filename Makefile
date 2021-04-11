@@ -4,10 +4,12 @@ raw:
 clean:
 	poetry run python ./scripts/make_clean.py
 
-load:
-	poetry run python ./scripts/make_load.py
+report:
+	poetry run python ./scripts/make_report.py
 
-print:
-	poetry run python ./scripts/make_print.py
+mails:
+	poetry run python ./scripts/make_mails.py
 
-run: raw clean
+data: raw clean report
+
+run: data mails
