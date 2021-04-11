@@ -1,10 +1,15 @@
-data:
-	poetry run python ./scripts/run_extract_transform.py
+raw:
+	poetry run python ./scripts/make_raw.py
 
-reporting:
-	poetry run python ./scripts/load_send.py
+clean:
+	poetry run python ./scripts/make_clean.py
 
-dataframe:
-	poetry run python ./scripts/print_data.py
+report:
+	poetry run python ./scripts/make_report.py
 
-run: data reporting
+mails:
+	poetry run python ./scripts/make_mails.py
+
+data: raw clean report
+
+run: data mails
