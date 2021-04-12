@@ -2,10 +2,16 @@ from pretty_html_table import build_table
 
 def get_html_df(df, df_title):
 
-    # presentation improvements
+    # link columns
+
+    def add_url_tags(url):
+        if url == '':
+            return url
+        return "URLSTART" + url + "URLEND"
+
     link_columns = [c for c in df.columns if 'url' in c]
     for c in link_columns:
-        df[c] = "URLSTART" + df[c] + "URLEND"
+        df[c] = df.apply(lambda x: add_url_tags(x[c]), axis=1)
 
     # build table
     theme = 'red_dark'

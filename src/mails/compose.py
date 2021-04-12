@@ -14,7 +14,8 @@ def compose(root_path):
 
     # fetch sold data
     for_sale_report_path = f'{root_path}/report/sold_report.json'
-    df = pd.read_json(for_sale_report_path)
+    read_dtypes = {'price_diff': object, 'sqm_price' : object}
+    df = pd.read_json(for_sale_report_path, dtype=read_dtypes)
     sold_email_body = get_html_df(df, 'Recent Sales')
 
     email_body = '<br><br>'.join([for_sale_email_body, sold_email_body])

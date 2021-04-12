@@ -45,9 +45,15 @@ def clean_sold_list(input_file_path, output_folder_path):
     df = df[column_dict.keys()]
     df = df.rename(columns=column_dict)
 
-    # add columns
-    df['list_price'] = df.apply(lambda x: round(x.sold_price * (100 + x.price_change)/100), axis=1)
-    df['price_diff'] = df['sold_price'] - df['list_price']
+    # add price columns
+    def get_list_price(sold_price, price_change):
+        list_price = sold_price * (100 - price_change)/100
+        list_price = round(list_price, -3)
+        return int(list_price)
+
+    df['list_price'] = df.apply(lambda x: get_list_price(x.sold_price, x.price_change), axis=1)
+    df['price_diff'] = round(df['sold_price'] - df['list_price'], 3)
+    df['sqm_price'] = round(df['sqm_price']).astype(int)
     df = add_days_ago(df, 'sold_date', 'days_since_sale')
 
     # save file
