@@ -1,7 +1,12 @@
 from os import path, makedirs
-from .utils import fix_pricing, add_days_ago, set_url, get_property_types
 import pandas as pd
 import pandasql as ps
+from .utils import (
+    fix_pricing,
+    add_days_ago,
+    set_url,
+    get_property_types
+)
 
 
 def compose(root_path):
@@ -18,16 +23,14 @@ def compose(root_path):
     make_for_sale_report(root_path, report_path)
 
 
-
 def make_sold_report(root_path, report_path):
 
     # load dataframes
     sold_list_path = f'{root_path}/clean/clean_sold_list.json'
-    df_list = pd.read_json(sold_list_path, orient='table')
-    
     sold_estate_path = f'{root_path}/clean/clean_sold_estate.json'
-    df_estate = pd.read_json(sold_estate_path, orient='table')
 
+    df_list = pd.read_json(sold_list_path, orient='table')
+    df_estate = pd.read_json(sold_estate_path, orient='table')
     df_types = get_property_types()
 
     # merge data to get meaningful sold list
@@ -45,8 +48,8 @@ def make_sold_report(root_path, report_path):
             E.lat,
             E.lon,
             T.property_id,
-            T.property_name AS type,
-            COALESCE(E.build_year, L.build_year) AS build_year,
+            T.alias AS type,
+            COALESCE(E.build_year, L.build_year) AS built,
             COALESCE(E.living_area, L.living_area) AS living_area,
             E.lot_area,
             E.bsmnt_area,
@@ -77,8 +80,8 @@ def make_sold_report(root_path, report_path):
     df['sqm_price'] = df.apply(lambda x: fix_pricing(x.sqm_price), axis=1)
     
     # helper cols
-    df['url'] = df.apply(lambda x: set_url(x.estate_id), axis=1)
-    df = add_days_ago(df, 'sold_date', 'days_since_sale')
+    df['boliga_url'] = df.apply(lambda x: set_url(x.estate_id), axis=1)
+    df = add_days_ago(df, 'sold_date', 'days')
 
     # filtering
     cols = [
@@ -87,16 +90,16 @@ def make_sold_report(root_path, report_path):
         'type',
         'rooms',
         'living_area',
-        'build_year',
+        'built',
         'list_price',
         'sold_price',
         'sqm_price',
         'energy',
         'price_diff',
-        'url',
-        'days_since_sale'
+        'boliga_url',
+        'days'
     ]
-    df = df[cols].sort_values(by=['days_since_sale']).reset_index(drop=True).head(30)
+    df = df[cols].sort_values(by=['days']).reset_index(drop=True).head(30)
 
     # save report
     report_path = f'{report_path}/sold_report.json'
@@ -108,22 +111,51 @@ def make_for_sale_report(root_path, report_path):
 
     # load dataframe
     sold_list_path = f'{root_path}/clean/clean_for_sale_list.json'
-    df_sold_list = pd.read_json(sold_list_path, orient='table')
+    sold_estate_path = f'{root_path}/clean/clean_for_sale_estate.json'
+
+    df_list = pd.read_json(sold_list_path, orient='table')
+    df_estate = pd.read_json(sold_estate_path, orient='table')
     df_types = get_property_types()
 
     # merge data to get meaningful sold list
     q = """
-        SELECT L.*, T.property_name AS type
-        FROM df_sold_list L
+        SELECT
+            L.estate_id,
+            L.created_date,
+            T.property_id,
+            T.alias AS type,
+            L.city,
+            L.municipality_code,
+            L.street,
+            E.clean_street,
+            L.zip_code,
+            L.area_category_id,
+            L.build_year AS built,
+            L.energy_class AS energy,
+            L.rooms,
+            L.floor,
+            L.living_area,
+            L.lot_area,
+            L.bsmnt_area,
+            L.list_price,
+            L.price_change,
+            L.sqm_price,
+            L.lat,
+            L.lon,
+            L.net,
+            L.exp,
+            E.estate_url AS realtor_url
+        FROM df_list L
+        LEFT JOIN df_estate E ON E.estate_id = L.estate_id
         INNER JOIN df_types T ON T.property_id = L.property_type
         """
     df = ps.sqldf(q)
 
     # fix columns
-    df['url'] = df.apply(lambda x: set_url(x.estate_id), axis=1)
+    df['boliga_url'] = df.apply(lambda x: set_url(x.estate_id), axis=1)
     df['list_price'] = df.apply(lambda x: fix_pricing(x.list_price), axis=1)
     df['sqm_price'] = df.apply(lambda x: fix_pricing(x.sqm_price), axis=1)
-    df = add_days_ago(df, 'created_date', 'days_on_market')
+    df = add_days_ago(df, 'created_date', 'days')
 
     # filtering
     cols = [
@@ -133,15 +165,16 @@ def make_for_sale_report(root_path, report_path):
         'rooms',
         'living_area',
         'lot_area',
-        'energy_class',
-        'build_year',
+        'energy',
+        'built',
         'list_price',
         'sqm_price',
-        'url',
-        'days_on_market'
+        'boliga_url',
+        'realtor_url',
+        'days'
     ]
-    df = df[cols].sort_values(by=['days_on_market']).reset_index(drop=True)
-    df = df[df['days_on_market'] < 14]
+    df = df[cols].sort_values(by=['days']).reset_index(drop=True)
+    df = df[df['days'] < 14]
 
     # save report
     report_path = f'{report_path}/for_sale_report.json'

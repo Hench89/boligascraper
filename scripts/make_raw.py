@@ -16,5 +16,5 @@ except:
     traceback.print_exc()
     sys.exit()
 
-archive_root = './archive'
-compose(archive_root, zipcodes)
+archive_path = './archive'
+compose(archive_path, zipcodes)

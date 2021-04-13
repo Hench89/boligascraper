@@ -27,7 +27,7 @@ def compose(root_path):
     clean_for_sale_list(latest_file_path, clean_path)
 
     # clean for sale estates
-    raw_estate_for_sale_path = f'{root_path}/raw/sold/estate'
+    raw_estate_for_sale_path = f'{root_path}/raw/forsale/estate'
     clean_for_sale_estate(raw_estate_for_sale_path, clean_path)
 
 
@@ -103,6 +103,8 @@ def clean_for_sale_estate(input_folder_path, output_folder_path):
     df = pd.DataFrame(list_dict)
 
     # renaming
+    df = df.drop('estateId', axis=1)
+    df = df.rename(columns={'id' : 'estateId'})
     column_dict = get_column_dict(df.columns)
     df = df[column_dict.keys()]
     df = df.rename(columns=column_dict)
@@ -150,7 +152,8 @@ def get_column_dict(dataset_keys):
         'createdDate' : 'created_date',
         'net' : 'net',
         'exp' : 'exp',
-        'basementSize' : 'bsmnt_area'
+        'basementSize' : 'bsmnt_area',
+        'isActive' : 'is_active'
     }
     filter_keys = [k for k in dataset_keys if k in full_dict.keys()]
     return {key: full_dict[key] for key in filter_keys}

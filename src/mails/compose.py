@@ -33,7 +33,7 @@ def compose(root_path):
     send_ssl_mail(
         send_from = env_send_from,
         password = env_password,
-        subject = "Boliga Listings",
+        subject = "Housing Agent",
         body = email_body,
         server = "smtp.gmail.com",
         port = 465,

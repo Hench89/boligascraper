@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import datetime
 
+
 def fix_pricing(price):
     if pd.isna(price):
         return '-'
