@@ -9,14 +9,13 @@ def compose(root_path):
 
     # fetch for sale data
     for_sale_report_path = f'{root_path}/report/for_sale_report.json'
-    df = pd.read_json(for_sale_report_path)
-    for_sale_email_body = get_html_df(df, 'Currently For Sale')
+    df = pd.read_json(for_sale_report_path, orient='table')
+    for_sale_email_body = get_html_df(df, 'For Sale')
 
     # fetch sold data
     for_sale_report_path = f'{root_path}/report/sold_report.json'
-    read_dtypes = {'price_diff': object, 'sqm_price' : object}
-    df = pd.read_json(for_sale_report_path, dtype=read_dtypes)
-    sold_email_body = get_html_df(df, 'Recent Sales')
+    df = pd.read_json(for_sale_report_path, orient='table')
+    sold_email_body = get_html_df(df, 'Sold')
 
     email_body = '<br><br>'.join([for_sale_email_body, sold_email_body])
 

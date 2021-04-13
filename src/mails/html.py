@@ -5,7 +5,7 @@ def get_html_df(df, df_title):
     # link columns
 
     def add_url_tags(url):
-        if url == '':
+        if url == '-':
             return url
         return "URLSTART" + url + "URLEND"
 

@@ -16,6 +16,7 @@ python = "^3.7.1"
 pandas = "^1.2.3"
 pretty-html-table = "^0.9.dev0"
 requests = "^2.25.1"
+pandasql = "^0.7.3"
 
 
 [tool.poetry.dev-dependencies]

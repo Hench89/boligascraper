@@ -1,4 +1,4 @@
-from .utils import load_json_folder, load_json_file, get_latest_file, add_days_ago
+from .utils import load_json_folder, load_json_file, get_latest_file
 from os import path, makedirs
 import pandas as pd
 
@@ -39,26 +39,17 @@ def clean_sold_list(input_file_path, output_folder_path):
 
     # initial renaming
     df = df.rename(columns={'price' : 'sold_price'})
-
-    # structured renaming
-    column_dict = get_column_dict(df.columns, 'clean_sold_list')
+    column_dict = get_column_dict(df.columns)
     df = df[column_dict.keys()]
     df = df.rename(columns=column_dict)
 
-    # add price columns
-    def get_list_price(sold_price, price_change):
-        list_price = sold_price * (100 - price_change)/100
-        list_price = round(list_price, -3)
-        return int(list_price)
-
-    df['list_price'] = df.apply(lambda x: get_list_price(x.sold_price, x.price_change), axis=1)
-    df['price_diff'] = round(df['sold_price'] - df['list_price'], 3)
+    # type casting
     df['sqm_price'] = round(df['sqm_price']).astype(int)
-    df = add_days_ago(df, 'sold_date', 'days_since_sale')
+    df['rooms'] = df['rooms'].astype(int)
 
     # save file
     output_file_path = f'{output_folder_path}/clean_sold_list.json'
-    df.to_json(output_file_path)
+    df.to_json(output_file_path, orient='table')
     print(f'Saved {output_file_path}!')
 
 
@@ -68,18 +59,19 @@ def clean_sold_estate(input_folder_path, output_folder_path):
     list_dict = load_json_folder(input_folder_path)
     df = pd.DataFrame(list_dict)
 
-    # initial renaming
+    # renaming
     df = df.drop('estateId', axis=1)
     df = df.rename(columns={'id' : 'estateId'})
-
-    # structured renaming
-    column_dict = get_column_dict(df.columns, 'clean_sold_estate')
+    column_dict = get_column_dict(df.columns)
     df = df[column_dict.keys()]
     df = df.rename(columns=column_dict)
 
+    # type casting
+    df['rooms'] = df['rooms'].astype(int)
+
     # save file
     output_file_path = f'{output_folder_path}/clean_sold_estate.json'
-    df.to_json(output_file_path)
+    df.to_json(output_file_path, orient='table')
     print(f'Saved {output_file_path}!')
 
 
@@ -89,20 +81,18 @@ def clean_for_sale_list(input_file_path, output_folder_path):
     list_dict = load_json_file(input_file_path)
     df = pd.DataFrame(list_dict)
 
-    # rename to prevent naming colissions
+    # renaming
     df = df.rename(columns={'id' : 'estateId'})
-
-    # structured renaming
-    column_dict = get_column_dict(df.columns, 'clean_for_sale_list')
+    column_dict = get_column_dict(df.columns)
     df = df[column_dict.keys()]
     df = df.rename(columns=column_dict)
 
-    # add columns
-    df = add_days_ago(df, 'created_date', 'days_on_market')
+    # type casting
+    df['rooms'] = df['rooms'].astype(int)
 
     # save file
     output_file_path = f'{output_folder_path}/clean_for_sale_list.json'
-    df.to_json(output_file_path)
+    df.to_json(output_file_path, orient='table')
     print(f'Saved {output_file_path}!')
 
 
@@ -112,21 +102,21 @@ def clean_for_sale_estate(input_folder_path, output_folder_path):
     list_dict = load_json_folder(input_folder_path)
     df = pd.DataFrame(list_dict)
 
-    # structured renaming
-    column_dict = get_column_dict(df.columns, 'clean_for_sale_estate')
+    # renaming
+    column_dict = get_column_dict(df.columns)
     df = df[column_dict.keys()]
     df = df.rename(columns=column_dict)
 
-    # add columns
-    df = add_days_ago(df, 'created_date', 'days_on_market')
+    # type casting
+    df['rooms'] = df['rooms'].astype(int)
 
     # save file
     output_file_path = f'{output_folder_path}/clean_for_sale_estate.json'
-    df.to_json(output_file_path)
+    df.to_json(output_file_path, orient='table')
     print(f'Saved {output_file_path}!')
 
 
-def get_column_dict(dataset_keys, dataset):
+def get_column_dict(dataset_keys):
     full_dict = {
         'estateId' : 'estate_id',
         'registeredArea' : 'area_id',

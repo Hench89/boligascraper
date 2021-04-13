@@ -22,7 +22,7 @@ def extract_list(folder_path, api_endpoint, zipcodes = []):
         print(f'Batch file is only {batch_age} hours old. Will reuse it for 20 hours')
         return
     else:
-        print(f'Latest batch is {batch_age} old. Fetching new one!')
+        print(f'Latest batch is {batch_age} hours old. Fetching new one!')
         fetch_list_data(folder_path, zipcodes, api_endpoint)
 
 
