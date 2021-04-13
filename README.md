@@ -1,28 +1,31 @@
-# Boliga Scraper
+# Housing Agent
 
-This is a small tool to fetch listings from Boliga.dk
-The result will be parsed into excel file
+Looking into buyig a house in denmark?
+This project includes a code to fetch recents listings on Boliga.dk for sale or sold.
+The results are processed and cleaned into a report that can be sent to your email.
 
-## How to Install
 
-Prerequisites
+# Installation
 
-* python<br>
-    `sudo apt-get install python3 python3-distutils`
-* language pack cnfigure to da_DK.UTF-8<br>
-    `sudo dpkg-reconfigure locales`
-* Poetry for python<br>
-`curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -`
+1. Install python
+2. Setup poetry for python: `curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -`
+3. Clone repository and run `poetry install` from root folder
 
-To install run the code `make install`
+# How to run
 
-## How to run scraping
+Using make to document commands:
+* `make data` will generate reports
+* `make mails` will send generated report to email(s) configured
+* `make run` will do both of the above
 
-To retrieve listings, use the compute function from scraper.reader module.
-`df = compute(archive_path, zipcodes_path, stations_path)`
-See file scripts/run_scraping.py for an example.
 
-## How to send email
+# Configuration
+
+## Geo scope
+
+Fetching data is done based on values specified in zipcodes.csv
+
+## Emails
 
 To send data to an email address, use the send_ssl_mail function from reporting.emails module.
 `send_ssl_mail(send_from, password, subject, body, server, port, send_to)`
