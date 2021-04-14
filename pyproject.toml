@@ -7,8 +7,8 @@ authors = ["Henrik Christoffersen"]
 packages = [
     { include = "raw", from = "src" },
     { include = "clean", from = "src" },
-    { include = "report", from = "src" },
-    { include = "mails", from = "src" }
+    { include = "baseline", from = "src" },
+    { include = "report", from = "src" }
 ]
 
 [tool.poetry.dependencies]

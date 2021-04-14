@@ -13,25 +13,29 @@ def compose(root_path):
         makedirs(clean_path)
 
     # clean sold list
-    raw_list_sold_path = f'{root_path}/raw/sold/list'
-    latest_file_path = get_latest_file(raw_list_sold_path)
-    clean_sold_list(latest_file_path, clean_path)
-
-    # clean sold estates
-    raw_estate_sold_path = f'{root_path}/raw/sold/estate'
-    clean_sold_estate(raw_estate_sold_path, clean_path)
+    folder_path = f'{root_path}/raw/sold/list'
+    input_file_path = get_latest_file(folder_path)
+    output_file_path = f'{clean_path}/sold_list.json'
+    clean_sold_list(input_file_path, output_file_path)
 
     # clean for sale list
-    raw_list_for_sale_path = f'{root_path}/raw/forsale/list'
-    latest_file_path = get_latest_file(raw_list_for_sale_path)
-    clean_for_sale_list(latest_file_path, clean_path)
+    folder_path = f'{root_path}/raw/forsale/list'
+    input_file_path = get_latest_file(folder_path)
+    output_file_path = f'{clean_path}/for_sale_list.json'
+    clean_for_sale_list(input_file_path, output_file_path)
+
+    # clean sold estates
+    input_folder_path = f'{root_path}/raw/sold/estate'
+    output_file_path = f'{clean_path}/sold_estate.json'
+    clean_sold_estate(input_folder_path, output_file_path)
 
     # clean for sale estates
-    raw_estate_for_sale_path = f'{root_path}/raw/forsale/estate'
-    clean_for_sale_estate(raw_estate_for_sale_path, clean_path)
+    input_folder_path = f'{root_path}/raw/forsale/estate'
+    output_file_path = f'{clean_path}/for_sale_estate.json'
+    clean_for_sale_estate(input_folder_path, output_file_path)
 
 
-def clean_sold_list(input_file_path, output_folder_path):
+def clean_sold_list(input_file_path, output_file_path):
 
     # load file to dataframe
     list_dict = load_json_file(input_file_path)
@@ -48,34 +52,11 @@ def clean_sold_list(input_file_path, output_folder_path):
     df['rooms'] = df['rooms'].astype(int)
 
     # save file
-    output_file_path = f'{output_folder_path}/clean_sold_list.json'
     df.to_json(output_file_path, orient='table')
     print(f'Saved {output_file_path}!')
 
 
-def clean_sold_estate(input_folder_path, output_folder_path):
-
-    # load folder to dataframe
-    list_dict = load_json_folder(input_folder_path)
-    df = pd.DataFrame(list_dict)
-
-    # renaming
-    df = df.drop('estateId', axis=1)
-    df = df.rename(columns={'id' : 'estateId'})
-    column_dict = get_column_dict(df.columns)
-    df = df[column_dict.keys()]
-    df = df.rename(columns=column_dict)
-
-    # type casting
-    df['rooms'] = df['rooms'].astype(int)
-
-    # save file
-    output_file_path = f'{output_folder_path}/clean_sold_estate.json'
-    df.to_json(output_file_path, orient='table')
-    print(f'Saved {output_file_path}!')
-
-
-def clean_for_sale_list(input_file_path, output_folder_path):
+def clean_for_sale_list(input_file_path, output_file_path):
 
     # load file to dataframe
     list_dict = load_json_file(input_file_path)
@@ -91,12 +72,11 @@ def clean_for_sale_list(input_file_path, output_folder_path):
     df['rooms'] = df['rooms'].astype(int)
 
     # save file
-    output_file_path = f'{output_folder_path}/clean_for_sale_list.json'
     df.to_json(output_file_path, orient='table')
     print(f'Saved {output_file_path}!')
 
 
-def clean_for_sale_estate(input_folder_path, output_folder_path):
+def clean_sold_estate(input_folder_path, output_file_path):
 
     # load folder to dataframe
     list_dict = load_json_folder(input_folder_path)
@@ -113,7 +93,27 @@ def clean_for_sale_estate(input_folder_path, output_folder_path):
     df['rooms'] = df['rooms'].astype(int)
 
     # save file
-    output_file_path = f'{output_folder_path}/clean_for_sale_estate.json'
+    df.to_json(output_file_path, orient='table')
+    print(f'Saved {output_file_path}!')
+
+
+def clean_for_sale_estate(input_folder_path, output_file_path):
+
+    # load folder to dataframe
+    list_dict = load_json_folder(input_folder_path)
+    df = pd.DataFrame(list_dict)
+
+    # renaming
+    df = df.drop('estateId', axis=1)
+    df = df.rename(columns={'id' : 'estateId'})
+    column_dict = get_column_dict(df.columns)
+    df = df[column_dict.keys()]
+    df = df.rename(columns=column_dict)
+
+    # type casting
+    df['rooms'] = df['rooms'].astype(int)
+
+    # save file
     df.to_json(output_file_path, orient='table')
     print(f'Saved {output_file_path}!')
 
