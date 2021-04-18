@@ -67,7 +67,7 @@ def make_sold_baseline(input_list_path, input_estate_path, output_file_path):
             COALESCE(L.price_change, E.price_change) AS price_change,
             COALESCE(L.sqm_price, E.sqm_price) AS sqm_price,
             E.days_for_sale
-        FROM df_list L 
+        FROM df_list L
         LEFT JOIN df_estate E ON E.estate_id = L.estate_id
         INNER JOIN df_types T ON T.property_id = COALESCE(E.property_type, L.property_type)
         """
@@ -127,7 +127,7 @@ def make_for_sale_baseline(input_list_path, input_estate_path, output_file_path)
 
     # add cols
     df['boliga_url'] = df.apply(lambda x: set_url(x.estate_id), axis=1)
-    
+
     # save report
     print(f'Saving report to {output_file_path}')
     df.to_json(output_file_path, orient='table')

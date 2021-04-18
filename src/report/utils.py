@@ -12,6 +12,13 @@ def fix_pricing(price):
     return str(price)
 
 
+def float_to_int_text(number):
+    try:
+        return str(int(number))
+    except Exception:
+        return '-'
+
+
 def add_days_ago(df, from_col, column_name):
     now_days = pd.to_datetime(datetime.datetime.now())
     created_days = pd.to_datetime(df[from_col], format='%Y-%m-%dT%H:%M:%S.%fZ')
