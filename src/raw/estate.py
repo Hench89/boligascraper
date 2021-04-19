@@ -10,12 +10,13 @@ from os import listdir, path
 import pandas as pd
 
 
-def extract_estate(list_path, estate_path, api_endpoint, zipcodes = []):
+def extract_estate(list_path, estate_path, api_endpoint, zipcodes_path):
 
-    if len(zipcodes)==0:
-        return print('.. zipcodes not configured correctly!')
+    # load zipcodes
+    zipcodes = pd.read_csv(zipcodes_path, usecols = [0]).iloc[:,0]
 
-    estate_ids = estate_ids = read_estate_ids(estate_path)
+    # read ids from archive
+    estate_ids = read_estate_ids(estate_path)
     list_ids = read_list_ids(list_path, api_endpoint, zipcodes)
 
     # determine which archive ids are missing

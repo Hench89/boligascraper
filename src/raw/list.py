@@ -2,18 +2,19 @@ from json import dumps
 from .utils import compress_save, read_json_from_url, get_latest_file, file_age_hours
 from math import ceil
 from datetime import datetime
+import pandas as pd
 
 
-def extract_list(folder_path, api_endpoint, zipcodes = []):
+def extract_list(folder_path, api_endpoint, zipcodes_path):
 
-    if len(zipcodes)==0:
-        return print('No zipcodes to process!')
+    # load zipcodes
+    zipcodes = pd.read_csv(zipcodes_path, usecols = [0]).iloc[:,0]
 
     # get latest batch file
     latest_batch_file = get_latest_file(folder_path)
     if latest_batch_file is None:
         print('Fetching batch for the first time')
-        fetch_list_data(folder_path, zipcodes, api_endpoint)
+        fetch_list_data(folder_path, api_endpoint, zipcodes)
         return
 
     # determine age of file
@@ -23,10 +24,13 @@ def extract_list(folder_path, api_endpoint, zipcodes = []):
         return
     else:
         print(f'Latest batch is {batch_age} hours old. Fetching new one!')
-        fetch_list_data(folder_path, zipcodes, api_endpoint)
+        fetch_list_data(folder_path, api_endpoint, zipcodes)
 
 
-def fetch_list_data(folder_path, zipcodes, api_endpoint):
+def fetch_list_data(folder_path, api_endpoint, zipcodes):
+
+    # load zipcodes
+    zipcodes = pd.read_csv(zipcodes_path, usecols = [0]).iloc[:,0]
 
     if not api_endpoint in ['for sale', 'sold']:
         print('did not specify a known fetch type')
@@ -35,7 +39,7 @@ def fetch_list_data(folder_path, zipcodes, api_endpoint):
     # fetch sold data
     sold_estate_list = []
     for z in zipcodes:
-        sold_estate_list += get_sold_data(z, api_endpoint)
+        sold_estate_list += get_sold_data(api_endpoint, z)
     sold_estates_json = dumps(sold_estate_list)
 
     # save sold data
@@ -44,7 +48,7 @@ def fetch_list_data(folder_path, zipcodes, api_endpoint):
     compress_save(file_path, sold_estates_json)
 
 
-def get_sold_data(zipcode, api_endpoint):
+def get_sold_data(api_endpoint, zipcode):
 
     def get_api_url(api_endpoint, page = None, pagesize = None, zipcode = None):
 
