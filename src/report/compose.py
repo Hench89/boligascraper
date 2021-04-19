@@ -138,18 +138,18 @@ def prepare_sold(input_file_path, header):
         'type',
         'rooms',
         'living_area',
+        'energy',
         'built',
         'list_price',
         'sold_price',
         'sqm_price',
-        'energy',
         'price_diff',
         'boliga_url',
         'days'
     ]
     df = df[cols]
     df = df.sort_values(by=['city', 'days']).reset_index(drop=True)
-    df = df.head(30)
+    df = df.groupby('city').head(15)
 
     return get_html_df(df, header)
 

@@ -43,8 +43,6 @@ def make_sold_baseline(input_list_path, input_estate_path, output_file_path):
             E.municipality_code,
             COALESCE(E.city, L.city) AS city,
             E.zip_code,
-            E.address,
-            E.clean_street,
             L.address,
             E.lat,
             E.lon,

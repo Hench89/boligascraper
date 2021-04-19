@@ -12,6 +12,7 @@ def get_html_df(df, df_title):
     # make address short
     def trunc(txt):
         return txt[:15] + '..' if len(txt) > 15 else txt
+
     df['address'] = df.apply(lambda x: trunc(x.address), axis=1)
 
     # build table
