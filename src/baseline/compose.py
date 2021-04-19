@@ -6,7 +6,7 @@ from .utils import get_property_types, set_url
 
 def compose(root_path):
 
-    print(f'===== REPORT =====')
+    print(f'===== BASELINE =====')
 
     # prepare staging paths
     input_folder_path = f'{root_path}/clean/'
@@ -43,8 +43,6 @@ def make_sold_baseline(input_list_path, input_estate_path, output_file_path):
             E.municipality_code,
             COALESCE(E.city, L.city) AS city,
             E.zip_code,
-            E.street,
-            E.clean_street,
             L.address,
             E.lat,
             E.lon,
@@ -100,7 +98,7 @@ def make_for_sale_baseline(input_list_path, input_estate_path, output_file_path)
             T.alias AS type,
             L.city,
             L.municipality_code,
-            L.street,
+            L.address,
             E.clean_street,
             L.zip_code,
             L.area_category_id,

@@ -28,7 +28,6 @@ def compose(root_path):
     send_email(email_body)
 
 
-
 def prepare_sold_stats(input_file_path):
 
     # read data
@@ -76,11 +75,12 @@ def prepare_for_sale(input_file_path, df_sold_stats, header):
     # filter data
     df = df[df['days'] < 30]
     df = df[df['property_id'].isin([1,2])]
+    df['maps_url'] = df.apply(lambda x: f'https://www.google.com/maps?q={x.lat},{x.lon}', axis=1)
 
     q = """
         SELECT
             D.city,
-            D.street,
+            D.address,
             D.type,
             D.rooms,
             D.living_area,
@@ -95,6 +95,7 @@ def prepare_for_sale(input_file_path, df_sold_stats, header):
             '' AS market,
             D.boliga_url,
             D.realtor_url,
+            D.maps_url,
             D.days
         FROM df D
         LEFT JOIN df_sold_stats S
@@ -137,18 +138,18 @@ def prepare_sold(input_file_path, header):
         'type',
         'rooms',
         'living_area',
+        'energy',
         'built',
         'list_price',
         'sold_price',
         'sqm_price',
-        'energy',
         'price_diff',
         'boliga_url',
         'days'
     ]
     df = df[cols]
-    df = df.sort_values(by=['days']).reset_index(drop=True)
-    df = df.head(30)
+    df = df.sort_values(by=['city', 'days']).reset_index(drop=True)
+    df = df.groupby('city').head(15)
 
     return get_html_df(df, header)
 
