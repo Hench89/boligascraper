@@ -124,6 +124,9 @@ def prepare_sold(input_file_path, header):
     # fetch sold data
     df = pd.read_json(input_file_path, orient='table')
 
+    # filter data
+    df = df[df['property_id'].isin([1,2])]
+
     # make fancy
     df = add_days_ago(df, 'sold_date', 'days')
     df['price_diff'] = df.apply(lambda x: fix_pricing(x.price_diff), axis=1)
