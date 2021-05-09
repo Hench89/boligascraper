@@ -2,49 +2,52 @@ import requests
 import math
 
 
-def get_pages(zipcode: str, api: str):
-    if api == 'forsale':
-        url = construct_sold_api_url(page=1, zipcode=zipcode)
-    if api == 'sold':
-        url = construct_for_sale_api_url(page=1, zipcode=zipcode)
+def get_api_endpoint(api_name: str):
+    d = {
+        'forsale' : 'https://api.boliga.dk/api/v2/search/results',
+        'sold' : 'https://api.boliga.dk/api/v2/sold/search/results'
+    }
+    api_endpoint = d[api_name]
+    return api_endpoint
+
+
+def add_parameters(api_endpoint:str, page = None, pagesize = None, zipcode = None):
+    parameters = []
+    parameters += [f'page={page}'] if page is not None else []
+    parameters += [f'pagesize={pagesize}'] if pagesize is not None else []
+    parameters += [f'zipcodeFrom={zipcode}'] if zipcode is not None else []
+    parameters += [f'zipcodeTo={zipcode}'] if zipcode is not None else []
+    joined_params = '&'.join(parameters)
+    return f'{api_endpoint}?{joined_params}'
+
+
+def get_api_pages_for_zipcode(api_name: str, zipcode: str):
+    api_endpoint = get_api_endpoint(api_name)
+    url = add_parameters(api_endpoint, page=1, zipcode=zipcode)
     data = read_json_from_url(url)
     total_count = data['meta']['totalCount']
     api_calls_required = math.ceil(total_count / 500)
     return api_calls_required
 
 
-def construct_sold_api_url(page = None, pagesize = None, zipcode = None):
-    api_end_point = "https://api.boliga.dk/api/v2/sold/search/results?"
-    parameters = []
-    parameters += [f'page={page}'] if page is not None else []
-    parameters += [f'pagesize={pagesize}'] if pagesize is not None else []
-    parameters += [f'zipcodeFrom={zipcode}'] if zipcode is not None else []
-    parameters += [f'zipcodeTo={zipcode}'] if zipcode is not None else []
-    return api_end_point + '&'.join(parameters)
+def get_list_data_from_zipcodes(api_name: str, zipcodes: list):
+    return [get_list_data_from_zipcode(api_name, z) for z in zipcodes]
 
 
-def construct_for_sale_api_url(page = None, pagesize = None, zipcode = None):
-    api_endpoint = "https://api.boliga.dk/api/v2/search/results?"
-    parameters = []
-    parameters += [f'page={page}'] if page is not None else []
-    parameters += [f'pagesize={pagesize}'] if pagesize is not None else []
-    parameters += [f'zipcodeFrom={zipcode}'] if zipcode is not None else []
-    parameters += [f'zipcodeTo={zipcode}'] if zipcode is not None else []
-    return api_end_point + '&'.join(parameters)
+def get_list_data_from_zipcode(api_name: str, zipcode: str):
+    n = get_api_pages_for_zipcode(api_name, zipcode)
+    api_endpoint = get_api_endpoint(api_name)
+    list_data = []
+    for p in range(1, n+1):
+        url = add_parameters(api_endpoint, page=p, pagesize=500, zipcode=zipcode)
+        data = read_json_from_url(url)
+        results = data['results']
+        print(f'Fetching list data from "{api_endpoint}" endpoint - {zipcode} with (page {p} of {n})')
+        list_data += [i for i in results]
+    return list_data
 
 
-def get_api_url(api_endpoint, page = None, pagesize = None, zipcode = None):
-    sold_api_endpoint = "https://api.boliga.dk/api/v2/sold/search/results?"
-    for_sale_api_endpoint = "https://api.boliga.dk/api/v2/search/results?"
-    api_end_point = sold_api_endpoint if api_endpoint == 'sold' else for_sale_api_endpoint
 
-    parameters = []
-    parameters += [f'page={page}'] if page is not None else []
-    parameters += [f'pagesize={pagesize}'] if pagesize is not None else []
-    parameters += [f'zipcodeFrom={zipcode}'] if zipcode is not None else []
-    parameters += [f'zipcodeTo={zipcode}'] if zipcode is not None else []
-
-    return api_end_point + '&'.join(parameters)
 
 def read_json_from_url(url):
     return requests.get(url).json()
