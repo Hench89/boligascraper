@@ -1,13 +1,11 @@
 from json import dumps
-from .utils import compress_save, read_json_from_url, get_latest_file, file_age_hours
+from .utils import compress_save
 from math import ceil
 from datetime import datetime
 import pandas as pd
 
 
 def extract_list(folder_path, api_endpoint, zipcodes_path):
-
-    # load zipcodes
     zipcodes = pd.read_csv(zipcodes_path, usecols = [0]).iloc[:,0]
 
     # get latest batch file

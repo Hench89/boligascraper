@@ -1,28 +1,22 @@
 import requests as r
 import json
-from os import path, makedirs, listdir
-import zlib
-import time
 
 
-def read_json_from_url(url):
-    return r.get(url).json()
+def compress_and_save_list(folder_path: str, api_data):
+    time_str = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    file_path = f'{folder_path}/{time_str}.zlib'
+    compress_and_save_file(file_path, api_data)
 
 
-def compress_save(file_path, data):
-
-    # create dirs if missing
+def compress_and_save_file(file_path, data):
     dir_name = path.dirname(file_path)
     if not path.exists(dir_name):
         makedirs(dir_name)
-
-    # encode and compress
     encoded_data = bytes(data, encoding='utf-8')
     compressed_data = zlib.compress(encoded_data)
-
-    # save file
     with open(file_path, "wb") as f:
         f.write(compressed_data)
+
 
 
 def decompresse_load(file_path):
@@ -50,16 +44,7 @@ def compare_number_sets(list_a, list_b):
     return list(a_set_only), list(set_intersection), list(b_set_only)
 
 
-def get_latest_file(folder_path):
 
-    if not path.exists(folder_path):
-        return None
-
-    files = listdir(folder_path)
-    if len(files)==0:
-        return None
-    files.sort(reverse=True)
-    return f'{folder_path}/{files[0]}'
 
 
 def get_latest_file_data(folder_path):
