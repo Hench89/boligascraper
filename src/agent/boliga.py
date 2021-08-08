@@ -15,6 +15,24 @@ class BoligaEstate:
         return df
 
 
+    def get_property_master_data(self):
+        data = [
+            [1, 'Villa', 'V'],
+            [2, 'Rækkehus', 'R'],
+            [3, 'Ejerlejlighed', 'E'],
+            [4, 'Fritidshus', 'F'],
+            [5, 'Andelsbolig', 'A'],
+            [6, 'Landejendom', 'L'],
+            [7, 'Helårsgrund', 'G'],
+            [8, 'Fritidsgrund', 'G'],
+            [9, 'Villalejlighed', 'VI'],
+            [10, 'Andet', 'A']
+        ]
+        cols = ['property_type', 'property_name', 'alias']
+        df = pd.DataFrame(data, columns = cols)
+        return df
+
+
 class BoligaList:
 
     def __init__(self):

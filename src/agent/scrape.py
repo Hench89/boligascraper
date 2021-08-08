@@ -1,6 +1,6 @@
 import pandas as pd
 from boliga import BoligaList, BoligaEstate
-from archive import RawArchive
+from archive import Archive
 import sys
 
 
@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     boliga_list = BoligaList()
     boliga_estate = BoligaEstate()
-    archive = RawArchive()
+    archive = Archive()
 
     list_age = archive.get_list_freshness()
     if list_age < 0:

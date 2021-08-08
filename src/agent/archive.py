@@ -3,7 +3,7 @@ import time
 import pandas as pd
 
 
-class RawArchive:
+class Archive:
 
     def __init__(self):
         self.list_forsale = './archive/list_forsale'
@@ -11,6 +11,12 @@ class RawArchive:
         self.estate_forsale = './archive/estate_forsale'
         self.estate_sold = './archive/estate_sold'
         self.clean_folder = './archive/clean'
+        self.clean_forsale_list = './archive/clean/forsale_list.csv'
+        self.clean_forsale_estate = './archive/clean/forsale_estate.csv'
+        self.clean_sold_list = './archive/clean/sold_list.csv'
+        self.clean_sold_estate = './archive/clean/sold_estate.csv'
+        self.clean_forsale_baseline = './archive/clean/forsale_baseline.csv'
+        self.clean_sold_baseline = './archive/clean/sold_baseline.csv'
         self.create_folder(self.list_forsale)
         self.create_folder(self.list_sold)
         self.create_folder(self.estate_forsale)
@@ -121,3 +127,15 @@ class RawArchive:
     def remove_sold_estate(self, estate_id):
         file_path = f'{self.estate_sold}/{estate_id}'
         os.remove(file_path)
+
+
+    def read_clean_forsale_data(self):
+        df_list = pd.read_csv(self.clean_forsale_list)
+        df_estate = pd.read_csv(self.clean_forsale_estate)
+        return df_list, df_estate
+
+
+    def read_clean_sold_data(self):
+        df_list = pd.read_csv(self.clean_sold_list)
+        df_estate = pd.read_csv(self.clean_sold_estate)
+        return df_list, df_estate

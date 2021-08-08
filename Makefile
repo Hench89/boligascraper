@@ -1,4 +1,4 @@
-all: scrape
+all: scrape clean
 
 scrape:
 	poetry run python ./src/agent/scrape.py
