@@ -55,7 +55,7 @@ class BoligaList:
             url = self.make_url(api_endpoint, page=p, pagesize=500, zipcode=zipcode)
             data = requests.get(url).json()
             results = data['results']
-            print(f'Fetching list data from "{api_endpoint}" endpoint - {zipcode} with (page {p} of {n})')
+            print(f'fetching list data in zipcode {zipcode} with ({p} of {n})')
             json_entries += [i for i in results]
         return json_entries
 

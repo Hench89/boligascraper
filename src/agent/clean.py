@@ -2,43 +2,62 @@ import pandas as pd
 from archive import RawArchive
 
 
-def clean_forsale_list(df, output_file_path):
+def clean_forsale_list():
+    archive = RawArchive()
+    df = archive.read_forsale_list()
     df = df.rename(columns={'id' : 'estateId'})
     column_dict = get_column_dict(df.columns)
     df = df[column_dict.keys()]
     df = df.rename(columns=column_dict)
     df['rooms'] = df['rooms'].astype(int)
+    output_file_path = './archive/clean/clean_forsale_list'
     df.to_csv(output_file_path, index=False)
+    print(f'Saved {output_file_path}!')
 
 
-def clean_sold_list(df, output_file_path):
+def clean_sold_list():
+    archive = RawArchive()
+    df = archive.read_sold_list()
     df = df.rename(columns={'price' : 'sold_price'})
     column_dict = get_column_dict(df.columns)
     df = df[column_dict.keys()]
     df = df.rename(columns=column_dict)
     df['sqm_price'] = round(df['sqm_price']).astype(int)
     df['rooms'] = df['rooms'].astype(int)
+
+    output_file_path = './archive/clean/clean_sold_list'
     df.to_csv(output_file_path, index=False)
+    print(f'Saved {output_file_path}!')
 
 
-def clean_forsale_estate(df, output_file_path):
+def clean_forsale_estate():
+    archive = RawArchive()
+    df = archive.read_all_forsale_estate()
     df = df.drop('estateId', axis=1)
     df = df.rename(columns={'id' : 'estateId'})
     column_dict = get_column_dict(df.columns)
     df = df[column_dict.keys()]
     df = df.rename(columns=column_dict)
     df['rooms'] = df['rooms'].astype(int)
+
+    output_file_path = './archive/clean/clean_forsale_estate'
     df.to_csv(output_file_path, index=False)
+    print(f'Saved {output_file_path}!')
 
 
-def clean_sold_estate(df, output_file_path):
+def clean_sold_estate():
+    archive = RawArchive()
+    df = archive.read_all_sold_estate()
     df = df.drop('estateId', axis=1)
     df = df.rename(columns={'id' : 'estateId'})
     column_dict = get_column_dict(df.columns)
     df = df[column_dict.keys()]
     df = df.rename(columns=column_dict)
     df['rooms'] = df['rooms'].astype(int)
+
+    output_file_path = './archive/clean/clean_sold_estate'
     df.to_csv(output_file_path, index=False)
+    print(f'Saved {output_file_path}!')
 
 
 def get_column_dict(dataset_keys):
@@ -83,24 +102,7 @@ def get_column_dict(dataset_keys):
 
 
 if __name__ == "__main__":
-    archive = RawArchive()
-
-    df = archive.read_forsale_list()
-    file_path = './archive/clean_forsale_list'
-    clean_forsale_list(df, file_path)
-    print(f'Saved {file_path}!')
-
-    df = archive.read_all_forsale_estate()
-    file_path = './archive/clean_forsale_estate'
-    clean_forsale_estate(df, file_path)
-    print(f'Saved {file_path}!')
-
-    df = archive.read_sold_list()
-    file_path = './archive/clean_sold_list'
-    clean_sold_list(df, file_path)
-    print(f'Saved {file_path}!')
-
-    df = archive.read_all_sold_estate()
-    file_path = './archive/clean_sold_estate'
-    clean_sold_estate(df, file_path)
-    print(f'Saved {file_path}!')
+    clean_forsale_list()
+    clean_forsale_estate()
+    clean_sold_list()
+    clean_sold_estate()

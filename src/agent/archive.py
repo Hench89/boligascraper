@@ -6,12 +6,16 @@ import pandas as pd
 class RawArchive:
 
     def __init__(self):
-        self.list_forsale = f'./archive/list_forsale'
-        self.list_sold = f'./archive/list_sold'
-        self.estate_forsale = f'./archive/estate_forsale'
-        self.estate_sold = f'./archive/estate_sold'
-        for f in [self.list_forsale, self.list_sold, self.estate_forsale, self.estate_sold]:
-            self.create_folder(f)
+        self.list_forsale = './archive/list_forsale'
+        self.list_sold = './archive/list_sold'
+        self.estate_forsale = './archive/estate_forsale'
+        self.estate_sold = './archive/estate_sold'
+        self.clean_folder = './archive/clean'
+        self.create_folder(self.list_forsale)
+        self.create_folder(self.list_sold)
+        self.create_folder(self.estate_forsale)
+        self.create_folder(self.estate_sold)
+        self.create_folder(self.clean_folder)
 
 
     def create_folder(self, folder_path: str):
@@ -103,7 +107,17 @@ class RawArchive:
 
     def read_all_sold_estate(self):
         file_names = os.listdir(self.estate_sold)
-        file_paths = [f'{self.estate_forsale}/{x}' for x in file_names]
+        file_paths = [f'{self.estate_sold}/{x}' for x in file_names]
         dfs = [pd.read_csv(x, compression="gzip") for x in file_paths]
         df = pd.concat(dfs)
         return df
+
+
+    def remove_forsale_estate(self, estate_id):
+        file_path = f'{self.estate_forsale}/{estate_id}'
+        os.remove(file_path)
+
+
+    def remove_sold_estate(self, estate_id):
+        file_path = f'{self.estate_sold}/{estate_id}'
+        os.remove(file_path)
