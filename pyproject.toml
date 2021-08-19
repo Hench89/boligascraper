@@ -5,6 +5,7 @@ description = ""
 authors = ["Henrik Christoffersen"]
 
 packages = [
+    { include = "agent", from = "src" },
     { include = "raw", from = "src" },
     { include = "clean", from = "src" },
     { include = "baseline", from = "src" },

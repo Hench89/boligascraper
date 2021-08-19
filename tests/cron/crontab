@@ -1,0 +1,2 @@
+# m h  dom mon dow   command
+0 15 * * * . $HOME/.profile; /home/pi/scripts/scraper.sh >> out.txt  2>&1
