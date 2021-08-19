@@ -67,7 +67,7 @@ if __name__ == "__main__":
     archive = Archive()
 
     list_age = archive.get_list_freshness()
-    if list_age < 0:
+    if list_age < 20:
         print(f'latest data is pretty new ({list_age} hours) - no need to refresh anything!')
         sys.exit(0)
 

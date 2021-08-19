@@ -139,3 +139,13 @@ class Archive:
         df_list = pd.read_csv(self.clean_sold_list)
         df_estate = pd.read_csv(self.clean_sold_estate)
         return df_list, df_estate
+
+
+    def read_forsale_baseline(self):
+        df = pd.read_csv(self.clean_forsale_baseline)
+        return df
+
+
+    def read_sold_baseline(self):
+        df = pd.read_csv(self.clean_sold_baseline)
+        return df

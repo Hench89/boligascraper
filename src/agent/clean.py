@@ -169,7 +169,6 @@ def merge_sold_data():
     print('merged sold data!')
 
 
-
 if __name__ == "__main__":
     clean_forsale_list()
     clean_forsale_estate()
