@@ -37,7 +37,7 @@ def prepare_forsale():
     ]
     df = df[cols]
     df = df.sort_values(by=['city', 'days']).reset_index(drop=True)
-
+    df = df.rename(columns={'alias':'type', 'energy_class':'energy', 'build_year':'built'})
     return df
 
 
@@ -76,7 +76,6 @@ def prepare_sold():
     df = df.sort_values(by=['city', 'days']).reset_index(drop=True)
     df = df.groupby('city').head(20)
     df = df.rename(columns={'alias':'type', 'energy_class':'energy', 'build_year':'built'})
-
     return df
 
 
