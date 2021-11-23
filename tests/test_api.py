@@ -63,6 +63,6 @@ def test_url_params(endpoint, params, expected_url):
 
 def test_convert_cols_to_int():
     data = {'living_area_size': '500.000', 'dummy_col': True}
-    expected_result = {'living_area_size': 500}
+    expected_result = {'living_area_size': 500, 'dummy_col': True}
     result = convert_types_in_estate_data(data)
     assert result == expected_result
