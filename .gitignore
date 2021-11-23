@@ -5,3 +5,5 @@ output
 .vscode
 secret.py
 archive
+.pytest_cache
+tests/generated

@@ -1,10 +1,7 @@
-all: scrape clean report
+ZIPCODES := 3450 2800
 
-scrape:
-	poetry run python ./src/agent/scrape.py
+test:
+	poetry run pytest
 
-clean:
-	poetry run python ./src/agent/clean.py
-
-report:
-	poetry run python ./src/agent/report.py
+compose:
+	poetry run python ./src/compose.py ${ZIPCODES}
