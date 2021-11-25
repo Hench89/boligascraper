@@ -1,5 +1,4 @@
 import requests, math, urllib
-from .utils import convert_str_to_int
 
 
 forsale_api = 'https://api.boliga.dk/api/v2/search/results'
@@ -14,9 +13,6 @@ def get_forsale_results(zipcode) -> list:
     for api_call in api_calls:
         json_data = requests.get(api_call).json()
         results += json_data['results']
-    for i in range(len(results)):
-        results[i] = filter_and_rename_estate(results[i])
-        results[i] = convert_types_in_estate_data(results[i])
     return results
 
 
@@ -27,9 +23,6 @@ def get_sold_results(zipcode) -> list:
     for api_call in api_calls:
         json_data = requests.get(api_call).json()
         results += json_data['results']
-    for i in range(len(results)):
-        results[i] = filter_and_rename_estate(results[i])
-        results[i] = convert_types_in_estate_data(results[i])
     return results
 
 
@@ -43,68 +36,7 @@ def get_list_stats(zipcode, api_endpoint) -> int:
 def get_estate_data(estate_id) -> dict:
     api_call = f'{estate_api}{estate_id}'
     json_response = requests.get(api_call).json()
-    estate_dict = filter_and_rename_estate(json_response)
-    estate_dict = convert_types_in_estate_data(estate_dict)
-    return estate_dict
-
-
-def filter_and_rename_estate(estate_dict) -> dict:
-    rename_dict = {
-        'estateUrl': 'estate_url',
-        'cleanStreet': 'clean_street_name',
-        'id': 'estate_id',
-        'estateId': 'estate_id',
-        'latitude': 'latitude',
-        'longitude': 'longitude',
-        'propertyType': 'property_type',
-        'priceChangePercentTotal': 'price_change_pct_total',
-        'energyClass': 'energy_class',
-        'price': 'price',
-        'rooms': 'rooms',
-        'size': 'living_area_size',
-        'lotSize': 'lot_size',
-        'floor': 'floor',
-        'buildYear': 'construction_year',
-        'city': 'city',
-        'isActive': 'is_active',
-        'zipCode': 'zipcode',
-        'street': 'street_name',
-        'squaremeterPrice': 'sqm_price',
-        'createdDate': 'created_date',
-        'net': 'net',
-        'exp': 'exp',
-        'basementSize': 'basement_size'
-    }
-
-    relevant_keys = set(rename_dict.keys()).intersection(estate_dict.keys())
-    result_dict = {}
-    for k in relevant_keys:
-        item_value = estate_dict[k]
-        item_key = rename_dict[k]
-        result_dict[item_key] = item_value
-    return result_dict
-
-
-def convert_types_in_estate_data(estate_dict) -> dict:
-    cols_to_convert_to_int = [
-        'estate_id',
-        'price',
-        'rooms',
-        'living_area_size',
-        'lot_size',
-        'floor',
-        'zipcode',
-        'net',
-        'exp',
-        'construction_year',
-        'basement_size',
-        'sqm_price'
-    ]
-    data_cols = estate_dict.keys()
-    relevant_cols = set(cols_to_convert_to_int).intersection(data_cols)
-    for c in relevant_cols:
-        estate_dict[c] = convert_str_to_int(estate_dict[c])
-    return estate_dict
+    return json_response
 
 
 def get_api_calls_to_make(api_endpoint, zipcode, total_count) -> list:

@@ -11,6 +11,15 @@ def convert_str_to_int(txt: str):
     return result
 
 
+def remove_numbers_and_special(txt: str):
+    if not isinstance(txt, str):
+        txt = str(txt)
+    items = re.findall('[a-zA-Z]+', txt)
+    if len(items) == 0:
+        return None
+    return items[0]
+
+
 def create_dirs_for_file(file_path: str):
     abs_file_path = os.path.abspath(file_path)
     dir_name = os.path.dirname(abs_file_path)

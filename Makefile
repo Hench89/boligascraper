@@ -1,4 +1,4 @@
-ZIPCODES := 3450 2800
+ZIPCODES := 3450
 
 test:
 	poetry run pytest

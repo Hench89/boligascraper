@@ -1,5 +1,6 @@
 import json, gzip, os
 from .utils import create_dirs_for_file
+import pandas as pd
 
 
 def save_dict(data, file_path: str):
@@ -16,25 +17,38 @@ def load_dict(file_path: str):
     return json_data
 
 
-def read_ids_from_list_file(file_path: str):
+def load_dataframe_from_file(file_path: str):
+    d = load_dict(file_path)
+    df = pd.DataFrame(d)
+    return df
+
+
+def load_dataframe_from_dir(dir_path):
+    files = [f for f in os.listdir(dir_path)]
+    data = [load_dict(f'{dir_path}/{f}') for f in files]
+    loaded_dict = [d for d in data if isinstance(d, dict)]
+    loaded_list = [l for l in data if isinstance(l, list)]  # if some files has list instead of dict
+    all_dict = loaded_dict + [i for s in loaded_list for i in s]
+    df = pd.DataFrame(all_dict)
+    return df
+
+
+def read_ids_from_list_file(file_path: str, id_col: str):
     with gzip.open(file_path, 'rb') as f:
         file_content = f.read()
     json_data = json.loads(file_content)
-    estate_ids = [x['estate_id'] for x in json_data]
+    estate_ids = [x[id_col] for x in json_data]
     return set(estate_ids)
 
 
-def load_all_dict_files_in_folder(dir_path: str) -> list:
-    gz_files = read_all_gz_file_names(dir_path)
-    dict_list = [load_dict(f) for f in gz_files]
-    return dict_list
-
-
-def identify_ids_already_downloaded(folder_path: str) -> list:
-    gz_files = [f for f in os.listdir(folder_path) if f.endswith('.gz')]
-    file_names = [os.path.splitext(f)[0] for f in gz_files]
-    numeric_file_names = [int(f) for f in file_names if f.isnumeric()]
-    return numeric_file_names
+def identify_ids_already_downloaded(dir_path: str) -> list:
+    if not os.path.exists(dir_path):
+        return []
+    files = [f for f in os.listdir(dir_path)]
+    file_names = [os.path.splitext(f)[0] for f in files]
+    numeric_files = [f for f in file_names if f.isnumeric()]
+    files_as_int = [int(f) for f in numeric_files]
+    return files_as_int
 
 
 def identify_new_ids_to_download(list_ids, archive_ids) -> list:
