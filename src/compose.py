@@ -1,5 +1,5 @@
-import os, sys
-from agent import boliga, archive, transform
+import os, sys, csv
+from agent import boliga, archive, transform, utils
 
 
 def download_and_save_list_data(zipcode, forsale_path, sold_path):
@@ -9,44 +9,39 @@ def download_and_save_list_data(zipcode, forsale_path, sold_path):
     archive.save_dict(sold_data, sold_path)
 
 
-def identify_new_estate_data(folder_root, forsale_path, sold_path):
+def download_new_estate_data(folder_root, forsale_path, sold_path):
     archive_ids = archive.identify_ids_already_downloaded(folder_root)
     forsale_ids = archive.read_ids_from_list_file(forsale_path, 'id')
     sold_ids = archive.read_ids_from_list_file(sold_path, 'estateId')
     list_ids = forsale_ids.union(sold_ids)
     ids_to_download = archive.identify_new_ids_to_download(list_ids, archive_ids)
-    return ids_to_download
-
-
-def download_new_estate_data(folder_root, ids_to_download):
     if len(ids_to_download) > 0:
         print(f'downloading estate data for {len(ids_to_download)} new items')
-        for i in ids_to_download:
+        for idx, i in enumerate(ids_to_download):
+            idx_to_go = len(ids_to_download) - idx
+            if (idx_to_go % 100) == 0:
+                print(f'{idx_to_go} more to go..')
             data = boliga.get_estate_data(i)
             save_path = f'{folder_root}/{i}.gz'
             archive.save_dict(data, save_path)
 
 
-def load_and_make_data_clean(path, load_dir=False):
-    if load_dir:
-        df = archive.load_dataframe_from_dir(path)
-    else:
-        df = archive.load_dataframe_from_file(path)
-    df = transform.filter_and_rename_boliga_columns(df)
-    df = transform.convert_types_in_estate_data(df)
-    return df
-
-def transform_and_save_data(df1, df2, key, save_path):
-    df = transform.add_missing_cols_to_dataframe(df1, df2, key)
-    df.to_csv(save_path, encoding='utf-8-sig')
+def read_and_clean_data(forsale_path, sold_path, estate_path):
+    df_forsale = archive.load_dataframe_from_file(forsale_path)
+    df_forsale = transform.run_cleaning_steps(df_forsale)
+    df_sold = archive.load_dataframe_from_file(sold_path)
+    df_sold = transform.run_cleaning_steps(df_sold)
+    df_estate = archive.load_dataframe_from_dir(estate_path)
+    df_estate = transform.run_cleaning_steps(df_estate)
+    return df_forsale, df_sold, df_estate
 
 
-def read_and_clean_data(forsale_path, sold_path, estate_path, forsale_clean_path, sold_clean_path):
-    df_forsale = load_and_make_data_clean(forsale_path)
-    df_sold = load_and_make_data_clean(sold_path)
-    df_estate = load_and_make_data_clean(estate_path, load_dir=True)
-    transform_and_save_data(df_forsale, df_estate, 'estate_id', forsale_clean_path)
-    transform_and_save_data(df_sold, df_estate, 'estate_id', sold_clean_path)
+def merge_data_and_save_to_file(df1, df2, parquet_path, csv_path):
+    df = transform.add_missing_cols_to_dataframe(df1, df2, 'estate_id')
+    for p in [parquet_path, csv_path]:
+        utils.create_dirs_for_file(p)
+    df.to_parquet(parquet_path)
+    df.to_csv(csv_path, encoding='utf-8-sig', quoting=csv.QUOTE_NONNUMERIC )
 
 
 if __name__ == '__main__':
@@ -55,13 +50,16 @@ if __name__ == '__main__':
     for zipcode in zipcodes_to_process:
         print(f'processing zipcode: {zipcode}')
 
-        estate_path = f'./archive/{zipcode}/estate'
-        forsale_path = f'./archive/{zipcode}/forsale.gz'
-        sold_path = f'./archive/{zipcode}/sold.gz'
-        forsale_clean_path = f'./archive/{zipcode}/forsale.csv'
-        sold_clean_path = f'./archive/{zipcode}/sold.csv'
+        path01 = f'./archive/{zipcode}/forsale_raw.gz'
+        path02 = f'./archive/{zipcode}/sold_raw.gz'
+        path03 = f'./archive/{zipcode}/estate_raw'
+        path04 = f'./archive/{zipcode}/clean/forsale.parquet'
+        path05 = f'./archive/{zipcode}/clean/forsale.csv'
+        path06 = f'./archive/{zipcode}/clean/sold.parquet'
+        path07 = f'./archive/{zipcode}/clean/sold.csv'
 
-        download_and_save_list_data(zipcode, forsale_path, sold_path)
-        ids = identify_new_estate_data(estate_path, forsale_path, sold_path)
-        download_new_estate_data(estate_path, ids)
-        read_and_clean_data(forsale_path, sold_path, estate_path, forsale_clean_path, sold_clean_path)
+        download_and_save_list_data(zipcode, path01, path02)
+        download_new_estate_data(path03, path01, path02)
+        df_forsale, df_sold, df_estate = read_and_clean_data(path01, path02, path03)
+        merge_data_and_save_to_file(df_forsale, df_estate, path04, path05)
+        merge_data_and_save_to_file(df_sold, df_estate, path06, path07)
