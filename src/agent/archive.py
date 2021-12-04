@@ -1,6 +1,7 @@
 import json, gzip, os
-from .utils import create_dirs_for_file
+from agent.utils import create_dirs_for_file
 import pandas as pd
+
 
 
 def save_dict(data, file_path: str):
@@ -17,7 +18,7 @@ def load_dict(file_path: str):
     return json_data
 
 
-def load_dataframe_from_file(file_path: str):
+def load_dataframe_from_file(file_path):
     d = load_dict(file_path)
     df = pd.DataFrame(d)
     return df
@@ -33,7 +34,8 @@ def load_dataframe_from_dir(dir_path):
     return df
 
 
-def read_ids_from_list_file(file_path: str, id_col: str):
+def read_ids_from_list_file(file_path, api):
+    id_col = 'id' if api == 'forsale' else 'estateId'
     with gzip.open(file_path, 'rb') as f:
         file_content = f.read()
     json_data = json.loads(file_content)
@@ -41,10 +43,10 @@ def read_ids_from_list_file(file_path: str, id_col: str):
     return set(estate_ids)
 
 
-def identify_ids_already_downloaded(dir_path: str) -> list:
-    if not os.path.exists(dir_path):
+def identify_estate_ids_already_downloaded(estate_root) -> list:
+    if not os.path.exists(estate_root):
         return []
-    files = [f for f in os.listdir(dir_path)]
+    files = [f for f in os.listdir(estate_root)]
     file_names = [os.path.splitext(f)[0] for f in files]
     numeric_files = [f for f in file_names if f.isnumeric()]
     files_as_int = [int(f) for f in numeric_files]
