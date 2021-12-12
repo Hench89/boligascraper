@@ -45,3 +45,7 @@ def get_api_calls_required(total_count: int):
 def get_url_with_params(endpoint: str, params: dict) -> str:
     params_encoded = urllib.parse.urlencode(params)
     return f'{endpoint}?{params_encoded}'
+
+
+def a_diff_b(a, b) -> list:
+    return set(a).difference(set(b))

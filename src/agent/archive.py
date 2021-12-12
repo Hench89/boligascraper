@@ -53,8 +53,15 @@ def identify_estate_ids_already_downloaded(estate_root) -> list:
     return files_as_int
 
 
-def identify_new_ids_to_download(list_ids, archive_ids) -> list:
-    relevant_list_ids = set(list_ids)
-    relevant_list_ids.remove(0)  # 0 when data only exist in list
-    ids_only_in_list = relevant_list_ids.difference(archive_ids)
-    return list(ids_only_in_list)
+def delete_files(dir_path, file_names, file_format='gz'):
+    files_to_remove = [f'{dir_path}/{f}.{file_format}' for f in file_names]
+    for f in files_to_remove:
+        os.remove(f)
+
+
+def load_dataframe(path):
+    if os.path.isdir(path):
+        df = load_dataframe_from_dir(path)
+    else:
+        df = load_dataframe_from_file(path)
+    return df
