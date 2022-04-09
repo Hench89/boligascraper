@@ -1,4 +1,4 @@
-import os, re, math, urllib
+import re
 import pandas as pd
 
 
@@ -31,21 +31,5 @@ def make_str_alphabetical(txt: str):
     return items[0]
 
 
-def create_dirs_for_file(file_path: str):
-    abs_file_path = os.path.abspath(file_path)
-    dir_name = os.path.dirname(abs_file_path)
-    if not os.path.isdir(dir_name):
-        os.makedirs(dir_name)
 
 
-def get_api_calls_required(total_count: int):
-    return math.ceil(total_count / 500)
-
-
-def get_url_with_params(endpoint: str, params: dict) -> str:
-    params_encoded = urllib.parse.urlencode(params)
-    return f'{endpoint}?{params_encoded}'
-
-
-def a_diff_b(a, b) -> list:
-    return set(a).difference(set(b))

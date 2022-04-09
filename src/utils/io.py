@@ -1,5 +1,4 @@
 import json, gzip, os
-from agent.utils import create_dirs_for_file
 import pandas as pd
 
 
@@ -65,3 +64,10 @@ def load_dataframe(path):
     else:
         df = load_dataframe_from_file(path)
     return df
+
+
+def create_dirs_for_file(file_path: str):
+    abs_file_path = os.path.abspath(file_path)
+    dir_name = os.path.dirname(abs_file_path)
+    if not os.path.isdir(dir_name):
+        os.makedirs(dir_name)

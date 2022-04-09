@@ -5,7 +5,9 @@ description = ""
 authors = ["Henrik Christoffersen"]
 
 packages = [
-    { include = "agent", from = "src" }
+    { include = "agent", from = "src" },
+    { include = "scrape", from = "src" },
+    { include = "utils", from = "src" }
 ]
 
 [tool.poetry.dependencies]
