@@ -1,14 +1,10 @@
-'''Maintain local archive for boliga data.
-
-Fetch all raw sold/for sale data from boliga within a set of zipcodes.
-Remove entries that no longer exist.
-'''
-
 import sys
 from datetime import date
 from utils import io
 import boliga_api
 from schema import ListItem
+from folder_archive import FolderArchive
+
 
 def identify_missing_and_removed_ids(forsale_path, sold_path, estate_dir):
     estate_ids = io.identify_estate_ids_already_downloaded(estate_dir)
@@ -32,26 +28,21 @@ def download_new_estate_data(ids, estate_dir):
         io.save_dict(data, estate_path)
 
 
-def download_new_list_data(zipcode, api_name, path):
-
+def download_new_list_data(zipcode, api_name, list_path, folder_archive):
+    print('.. downloading list data')
     results = boliga_api.get_list_results(zipcode, api_name)
-    for raw_dict in results:
-    
-        filtered_dict = {k: raw_dict[k] for k in ListItem().raw_fields}
-        filtered_dict['list_type'] = api_name
 
-        print(filtered_dict)
-        list_item = ListItem(**filtered_dict)
-        print(list_item)
-    
-    io.save_dict(data, path)
+    list_items = []
+    for result_item in results:
+        filtered_result = {k: result_item[k] for k in ListItem().input_fields}
+        filtered_result['list_type'] = api_name
+        list_items.append(ListItem(**filtered_result))
+
+    folder_archive.save_list_result(list_items, list_path)
 
 
 def process_zipcode(zipcode, forsale_path, sold_path, estate_dir):
 
-    print('.. downloading list data')
-    download_new_list_data(zipcode, api_name='forsale', path=forsale_path)
-    download_new_list_data(zipcode, api_name='sold', path=sold_path)
     missing_ids, removed_ids = identify_missing_and_removed_ids(forsale_path, sold_path, estate_dir)
 
     if len(missing_ids) > 0:
@@ -63,17 +54,19 @@ def process_zipcode(zipcode, forsale_path, sold_path, estate_dir):
         io.delete_files(estate_dir, removed_ids)
 
 
-
 def main():
 
     zipcodes = [int(x) for x in sys.argv[1:] if x.isnumeric()]
+    folder_archive = FolderArchive()
     for zipcode in zipcodes:
-        forsale_file = f'./archive/{zipcode}/forsale_raw.gz'
-        sold_file = f'./archive/{zipcode}/sold_raw.gz'
-        estate_dir = f'./archive/{zipcode}/estate_raw'
-        
+
         print(f'processing zipcode {zipcode}')
-        process_zipcode(zipcode, forsale_file, sold_file, estate_dir)
+        endpoints = [
+            ('forsale', f'./archive/{zipcode}/forsale_raw'),
+            ('sold', f'./archive/{zipcode}/sold_raw')
+        ]
+        for endpoint_name, file_path in endpoints:
+            download_new_list_data(zipcode, endpoint_name, file_path, folder_archive)
 
 
 if __name__ == '__main__':

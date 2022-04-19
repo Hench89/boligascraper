@@ -8,8 +8,9 @@ class Estate:
 
 @dataclass
 class ListItem:
+
+    # input_fields
     id: int = None
-    list_type: str = None
     latitude: Optional[str] = None
     longitude: Optional[str] = None
     propertyType: Optional[str] = None
@@ -34,11 +35,17 @@ class ListItem:
     exp: Optional[int] = None
     basementSize: Optional[int] = None
 
+    # added fields
+    list_type: str = None
+
     @property
-    def raw_fields(self):
-        return set(self.__dict__.keys()) - self.custom_fields
-    
+    def input_fields(self):
+        return list(set(self.__dict__.keys()) - set(self.added_fields))
+
     @property
-    def custom_fields(self):
-        return set([self.list_type])
-    
+    def added_fields(self):
+        return list(['list_type'])
+
+    @property
+    def as_dict(self):
+        return self.__dict__

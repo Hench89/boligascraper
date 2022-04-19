@@ -1,19 +1,19 @@
 import requests
 import urllib
 import math
+from enum import Enum
 
 
-FORSALE_API = 'https://api.boliga.dk/api/v2/search/results'
-SOLD_API = 'https://api.boliga.dk/api/v2/sold/search/results'
-ESTATE_API = 'https://api.boliga.dk/api/v2/estate/'
-API_ENDPOINTS = {'forsale': FORSALE_API, 'sold': SOLD_API, 'estate': ESTATE_API}
-
+API_ENDPOINTS = {
+    'forsale': 'https://api.boliga.dk/api/v2/search/results',
+    'sold': 'https://api.boliga.dk/api/v2/sold/search/results',
+    'estate': 'https://api.boliga.dk/api/v2/estate/'
+}
 
 def get_list_results(zipcode, api_name):
     api_endpoint = API_ENDPOINTS[api_name]
     total_count = _get_list_stats(zipcode, api_endpoint)
     api_calls = _get_api_calls_to_make(api_endpoint, zipcode, total_count)
-
     results = []
     for api_call in api_calls:
         json_data = requests.get(api_call).json()
@@ -22,7 +22,7 @@ def get_list_results(zipcode, api_name):
 
 
 def get_estate_data(estate_id):
-    api_call = f'{ESTATE_API}{estate_id}'
+    api_call = API_ENDPOINTS['estate'] + str(estate_id)
     json_response = requests.get(api_call).json()
     return json_response
 
